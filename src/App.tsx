@@ -72,7 +72,7 @@ const NavLink = ({ label, active, onClick, href }: { label: string, active?: boo
 
 const FooterLink = ({ label }: { label: string }) => (
   <li>
-    <a href="#" className="text-sm text-slate-500 hover:text-brand-600 transition-colors">
+    <a href="#" className="text-sm text-slate-400 hover:text-brand-500 transition-colors">
       {label}
     </a>
   </li>
@@ -633,26 +633,26 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="bg-light-surface border-t border-slate-200 pt-24 pb-12">
+      <footer className="bg-slate-950 border-t border-white/5 pt-24 pb-12">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
             <div className="lg:col-span-1 space-y-6">
               <div className="flex items-center gap-3">
-                <Sun className="w-8 h-8 text-brand-600" />
+                <Sun className="w-8 h-8 text-brand-500" />
                 <span className="font-display font-bold text-2xl brand-text-gradient">Sorgummology</span>
               </div>
-              <p className="text-slate-500 text-sm leading-relaxed">
+              <p className="text-slate-400 text-sm leading-relaxed">
                 Ekosistem cerdas untuk masa depan kedaulatan pangan melalui sorgum.
               </p>
               <div className="flex gap-4">
-                <Instagram className="w-5 h-5 text-slate-400 hover:text-brand-600 cursor-pointer transition-colors" />
-                <Twitter className="w-5 h-5 text-slate-400 hover:text-brand-600 cursor-pointer transition-colors" />
-                <Facebook className="w-5 h-5 text-slate-400 hover:text-brand-600 cursor-pointer transition-colors" />
+                <Instagram className="w-5 h-5 text-slate-500 hover:text-brand-500 cursor-pointer transition-colors" />
+                <Twitter className="w-5 h-5 text-slate-500 hover:text-brand-500 cursor-pointer transition-colors" />
+                <Facebook className="w-5 h-5 text-slate-500 hover:text-brand-500 cursor-pointer transition-colors" />
               </div>
             </div>
 
             <div>
-              <h4 className="text-dark-text font-bold mb-6">Produk</h4>
+              <h4 className="text-white font-bold mb-6 font-display uppercase tracking-widest text-xs">Produk</h4>
               <ul className="space-y-4">
                 <FooterLink label="IoT Monitoring" />
                 <FooterLink label="AI Analytics" />
@@ -661,7 +661,7 @@ export default function App() {
             </div>
 
             <div>
-              <h4 className="text-dark-text font-bold mb-6">Tautan</h4>
+              <h4 className="text-white font-bold mb-6 font-display uppercase tracking-widest text-xs">Tautan</h4>
               <ul className="space-y-4">
                 <FooterLink label="Tentang Kami" />
                 <FooterLink label="Kisah Petani" />
@@ -670,20 +670,20 @@ export default function App() {
             </div>
 
             <div>
-              <h4 className="text-dark-text font-bold mb-6">Hubungi</h4>
+              <h4 className="text-white font-bold mb-6 font-display uppercase tracking-widest text-xs">Hubungi</h4>
               <ul className="space-y-4">
-                <li className="flex items-center gap-3 text-sm text-slate-500">
-                  <Mail className="w-4 h-4 text-brand-600" />
+                <li className="flex items-center gap-3 text-sm text-slate-400">
+                  <Mail className="w-4 h-4 text-brand-500" />
                   kontak@sorgummology.id
                 </li>
-                <li className="flex items-center gap-3 text-sm text-slate-500">
-                  <MapPin className="w-4 h-4 text-brand-600" />
+                <li className="flex items-center gap-3 text-sm text-slate-400">
+                  <MapPin className="w-4 h-4 text-brand-500" />
                   Jawa Timur, Indonesia
                 </li>
               </ul>
             </div>
           </div>
-          <p className="text-xs text-slate-400 text-center border-t border-slate-100 pt-8">© 2026 Sorgummology. Seluruh Hak Cipta Dilindungi.</p>
+          <p className="text-xs text-slate-600 text-center border-t border-white/5 pt-8">© 2026 Sorgummology. Seluruh Hak Cipta Dilindungi.</p>
         </div>
       </footer>
     </div>

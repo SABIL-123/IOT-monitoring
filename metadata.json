@@ -1,0 +1,8 @@
+{
+  "name": "Sorgummology IoT Monitor",
+  "description": "Smart IoT monitoring system for sorghum agriculture, featuring real-time sensor data and analytics.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

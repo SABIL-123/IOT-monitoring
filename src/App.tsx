@@ -311,32 +311,32 @@ const Testimonials = () => {
   const prev = () => setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
 
   return (
-    <section id="testimonials" className="py-32 relative overflow-hidden bg-white">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-500/5 rounded-full blur-[120px] -z-10 translate-x-1/2 -translate-y-1/2" />
+    <section id="testimonials" className="py-24 relative overflow-hidden bg-white">
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-500/5 rounded-full blur-[100px] -z-10 translate-x-1/2 -translate-y-1/2" />
       <div className="container mx-auto px-6">
-        <div className="flex flex-col md:flex-row items-end justify-between mb-20 gap-8">
-          <div className="max-w-xl space-y-6">
-            <h2 className="text-5xl font-display font-black text-dark-text tracking-tight">Apa Kata Mereka?</h2>
-            <div className="w-20 h-1.5 brand-gradient rounded-full" />
-            <p className="text-xl text-muted-text font-medium leading-relaxed">Pengalaman nyata dari para mitra petani yang telah merasakan manfaat Sorgummology dalam keseharian mereka.</p>
+        <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-8">
+          <div className="max-w-xl space-y-4">
+            <h2 className="text-4xl font-display font-black text-dark-text tracking-tight">Apa Kata Mereka?</h2>
+            <div className="w-16 h-1.5 brand-gradient rounded-full" />
+            <p className="text-lg text-muted-text font-medium leading-relaxed">Pengalaman nyata dari para mitra petani yang telah merasakan manfaat Sorgummology.</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <button 
               onClick={prev}
-              className="p-5 bg-slate-100 rounded-full border-2 border-slate-200 cursor-pointer hover:bg-white hover:border-brand-500 transition-all shadow-sm active:scale-90"
+              className="p-4 bg-slate-100 rounded-full border-2 border-slate-200 cursor-pointer hover:bg-white hover:border-brand-500 transition-all shadow-sm active:scale-90"
             >
-              <ArrowRight className="w-6 h-6 rotate-180 text-dark-text" />
+              <ArrowRight className="w-5 h-5 rotate-180 text-dark-text" />
             </button>
             <button 
               onClick={next}
-              className="p-5 brand-gradient rounded-full shadow-xl shadow-brand-500/20 cursor-pointer hover:scale-110 transition-all active:scale-95"
+              className="p-4 brand-gradient rounded-full shadow-xl shadow-brand-500/20 cursor-pointer hover:scale-110 transition-all active:scale-95"
             >
-              <ArrowRight className="w-6 h-6 text-white" />
+              <ArrowRight className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
 
-        <div className="relative h-[450px] md:h-[400px]">
+        <div className="relative h-[320px] md:h-[280px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -347,26 +347,26 @@ const Testimonials = () => {
               className="absolute inset-0"
             >
               <div className={cn(
-                "glass-card p-12 md:p-20 border-2 rounded-[3rem] h-full flex flex-col justify-center relative overflow-hidden bg-white shadow-2xl",
+                "glass-card p-10 md:p-14 border-2 rounded-[2.5rem] h-full flex flex-col justify-center relative overflow-hidden bg-white shadow-xl",
                 items[currentIndex].tint
               )}>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/40 rounded-full translate-x-32 -translate-y-32 blur-3xl opacity-50" />
-                <Quote className="absolute top-12 right-12 w-24 h-24 text-brand-500/5 rotate-12" />
+                <div className="absolute top-0 right-0 w-48 h-48 bg-white/40 rounded-full translate-x-24 -translate-y-24 blur-3xl opacity-50" />
+                <Quote className="absolute top-8 right-8 w-16 h-16 text-brand-500/5 rotate-12" />
                 
                 <div className="relative z-10 max-w-4xl">
-                  <p className="text-2xl md:text-4xl text-slate-700 italic font-bold mb-12 leading-tight">
+                  <p className="text-xl md:text-2xl text-slate-700 italic font-bold mb-8 leading-tight">
                     "{items[currentIndex].text}"
                   </p>
                   
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4">
                     <img 
                       src={items[currentIndex].img} 
                       alt={items[currentIndex].name} 
-                      className="w-20 h-20 rounded-3xl border-4 border-white shadow-2xl" 
+                      className="w-14 h-14 rounded-2xl border-4 border-white shadow-xl" 
                     />
                     <div>
-                      <p className="font-black text-2xl text-dark-text">{items[currentIndex].name}</p>
-                      <p className="text-brand-600 font-black uppercase tracking-[0.25em] text-xs mt-1">{items[currentIndex].role}</p>
+                      <p className="font-black text-xl text-dark-text">{items[currentIndex].name}</p>
+                      <p className="text-brand-600 font-black uppercase tracking-[0.25em] text-[10px] mt-0.5">{items[currentIndex].role}</p>
                     </div>
                   </div>
                 </div>

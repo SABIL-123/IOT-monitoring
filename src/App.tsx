@@ -44,15 +44,29 @@ type ViewMode = 'landing' | 'dashboard';
 
 // --- Shared Internal Components ---
 
-const NavLink = ({ label, active, onClick }: { label: string, active?: boolean, onClick: () => void }) => (
+const NavLink = ({ label, active, onClick, href }: { label: string, active?: boolean, onClick: () => void, href?: string }) => (
   <button 
-    onClick={onClick}
+    onClick={() => {
+      if (href?.startsWith('#')) {
+        const el = document.querySelector(href);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+          onClick();
+          return;
+        }
+      }
+      onClick();
+    }}
     className={cn(
-      "text-sm font-medium transition-colors hover:text-brand-600",
+      "text-sm font-medium transition-all hover:text-brand-600 relative group",
       active ? "text-brand-600" : "text-muted-text"
     )}
   >
     {label}
+    <span className={cn(
+      "absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-500 transition-all group-hover:w-full",
+      active && "w-full"
+    )} />
   </button>
 );
 
@@ -67,93 +81,118 @@ const FooterLink = ({ label }: { label: string }) => (
 // --- Landing Page Sections ---
 
 const Hero = ({ onGetStarted }: { onGetStarted: () => void }) => (
-  <section className="relative min-h-[90vh] flex items-center overflow-hidden pt-20 bg-light-bg">
-    <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-500/5 rounded-full blur-[150px] -z-10 translate-x-1/2 -translate-y-1/2" />
-    <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+  <section id="home" className="relative min-h-[95vh] flex items-center overflow-hidden pt-20 bg-light-bg">
+    {/* Decorative Blobs */}
+    <div className="absolute top-20 left-10 w-72 h-72 bg-brand-500/10 rounded-full blur-[100px] animate-pulse" />
+    <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent-blue/10 rounded-full blur-[100px] animate-pulse delay-700" />
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[600px] bg-brand-500/5 rounded-full blur-[180px] -z-10" />
+
+    <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
       <motion.div 
-        initial={{ opacity: 0, x: -30 }}
+        initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
-        className="space-y-8"
+        className="space-y-10 relative z-10"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 border border-brand-500/20 rounded-full text-brand-600 text-xs font-bold uppercase tracking-widest">
-          <Leaf className="w-4 h-4" />
-          The Future of Agriculture
+        <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-500/10 border border-brand-500/20 rounded-full text-brand-700 text-xs font-bold uppercase tracking-widest shadow-sm">
+          <Leaf className="w-4 h-4 text-brand-600" />
+          Masa Depan Pertanian Indonesia
         </div>
-        <h1 className="text-5xl md:text-7xl font-display font-black leading-[1.1] brand-text-gradient">
-          Revolusi Pertanian <br /> Sorgum Cerdas.
+        <h1 className="text-6xl md:text-8xl font-display font-black leading-tight brand-text-gradient tracking-tight">
+          Panen Lebih <br /> <span className="text-dark-text">Banyak & Cerdas.</span>
         </h1>
-        <p className="text-lg text-muted-text max-w-xl leading-relaxed">
-          Optimalkan hasil panen sorgum Anda dengan teknologi IoT mutakhir dan analisis data berbasis AI. Pantau, analisa, dan bertindak dengan presisi.
+        <p className="text-xl text-muted-text max-w-xl leading-relaxed font-medium">
+          Sorgummology membantu petani meningkatkan produktivitas hingga 40% dengan bantuan sensor IoT pintar dan analisis kecerdasan buatan.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row gap-5 pt-4">
           <button 
             onClick={onGetStarted}
-            className="px-8 py-4 brand-gradient text-white rounded-2xl font-bold shadow-xl shadow-brand-500/20 hover:scale-105 transition-all flex items-center justify-center gap-2 group"
+            className="px-10 py-5 brand-gradient text-white rounded-2xl font-black text-lg shadow-2xl shadow-brand-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 group"
           >
             Mulai Pantau Lahan
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
           </button>
-          <button className="px-8 py-4 bg-slate-100 border border-slate-200 text-dark-text rounded-2xl font-bold hover:bg-slate-200 transition-all">
-            Pelajari Teknologi Kami
+          <button className="px-10 py-5 bg-white border-2 border-slate-100 text-dark-text rounded-2xl font-black text-lg hover:bg-slate-50 hover:border-brand-500/20 shadow-xl transition-all">
+            Pelajari Teknologi
           </button>
         </div>
-        <div className="flex items-center gap-8 pt-8">
-          <div>
-            <p className="text-2xl font-bold text-dark-text">500+</p>
-            <p className="text-xs text-slate-400 uppercase tracking-widest">Petani Aktif</p>
+        
+        <div className="flex items-center gap-12 pt-10">
+          <div className="space-y-1">
+            <p className="text-3xl font-black text-dark-text">500+</p>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Petani Aktif</p>
           </div>
-          <div className="w-px h-10 bg-slate-200" />
-          <div>
-            <p className="text-2xl font-bold text-dark-text">1.2K</p>
-            <p className="text-xs text-slate-400 uppercase tracking-widest">Sensor Terpasang</p>
+          <div className="w-px h-12 bg-slate-200" />
+          <div className="space-y-1">
+            <p className="text-3xl font-black text-dark-text">1.2K</p>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">IoT Terpasang</p>
           </div>
-          <div className="w-px h-10 bg-slate-200" />
-          <div>
-            <p className="text-2xl font-bold text-dark-text">99.9%</p>
-            <p className="text-xs text-slate-400 uppercase tracking-widest">Uptime Sistem</p>
+          <div className="w-px h-12 bg-slate-200" />
+          <div className="space-y-1">
+            <p className="text-3xl font-black text-mist-500">24%</p>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Efisiensi Hasil</p>
           </div>
         </div>
       </motion.div>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.2, type: 'spring', damping: 15 }}
         className="relative"
       >
-        <div className="glass-brand p-4 rounded-[2rem] border-2 border-brand-500/20 shadow-2xl relative z-10">
-          <img 
-            src="https://picsum.photos/seed/sorghum-field/800/600" 
-            alt="Sorghum Agriculture" 
-            className="rounded-[1.5rem] w-full h-auto object-cover"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute -bottom-6 -left-6 glass p-6 rounded-2xl border border-slate-200 shadow-xl hidden md:block">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-500/20 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-brand-600" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 font-bold uppercase">Hasil Panen</p>
-                <p className="text-lg font-bold text-dark-text">+24% Meningkat</p>
-              </div>
+        <div className="relative z-10 group">
+          <div className="absolute -inset-4 bg-brand-500/20 rounded-[2.5rem] blur-2xl group-hover:bg-brand-500/30 transition-all duration-500" />
+          <div className="glass-brand p-5 rounded-[2.5rem] border-2 border-brand-500/30 shadow-2xl relative bg-white/40 backdrop-blur-3xl overflow-hidden">
+            <img 
+              src="https://picsum.photos/seed/agritech/800/600" 
+              alt="Sorghum Agriculture Tech" 
+              className="rounded-[2rem] w-full h-auto object-cover shadow-2xl"
+              referrerPolicy="no-referrer"
+            />
+            {/* Realtime floating badge */}
+            <div className="absolute top-10 right-10 flex items-center gap-2 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tighter animate-bounce shadow-lg shadow-emerald-500/40">
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+              Live Data
             </div>
           </div>
-          <div className="absolute -top-6 -right-6 glass-brand p-6 rounded-2xl border border-brand-500/20 shadow-xl hidden md:block">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-accent-blue/20 rounded-full flex items-center justify-center">
-                <Activity className="w-5 h-5 text-accent-blue" />
+          
+          <motion.div 
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -bottom-10 -left-10 glass p-8 rounded-[2rem] border border-slate-200 shadow-2xl bg-white/90 backdrop-blur-xl z-20"
+          >
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 bg-brand-500/20 rounded-2xl flex items-center justify-center shadow-inner">
+                <TrendingUp className="w-8 h-8 text-brand-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Optimasi Hasil</p>
+                <p className="text-2xl font-black text-dark-text">+38% <span className="text-brand-500 font-bold text-sm">per panen</span></p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="absolute -top-10 -right-10 glass-brand p-8 rounded-[2rem] border border-brand-500/30 shadow-2xl bg-white/80 backdrop-blur-xl z-20"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-accent-blue/10 rounded-2xl flex items-center justify-center">
+                <Droplets className="w-8 h-8 text-accent-blue" />
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] text-slate-500 font-bold uppercase">Sensor Live</p>
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-4 bg-accent-blue rounded-full" />
-                  <div className="w-1.5 h-6 bg-accent-blue/60 rounded-full" />
-                  <div className="w-1.5 h-8 bg-accent-blue rounded-full" />
+                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Kandungan Air</p>
+                <div className="flex gap-1.5 items-end">
+                  <div className="w-2 h-4 bg-accent-blue rounded-full" />
+                  <div className="w-2 h-8 bg-accent-blue rounded-full" />
+                  <div className="w-2 h-6 bg-accent-blue rounded-full" />
+                  <div className="w-2 h-10 bg-accent-blue rounded-full" />
+                  <p className="text-lg font-black text-dark-text ml-2">74%</p>
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </motion.div>
     </div>
@@ -161,46 +200,77 @@ const Hero = ({ onGetStarted }: { onGetStarted: () => void }) => (
 );
 
 const FeatureSection = () => (
-  <section id="features" className="py-24 bg-light-surface">
-    <div className="container mx-auto px-6">
-      <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
-        <h2 className="text-4xl font-display font-bold">Mengapa Memilih Kami?</h2>
-        <p className="text-muted-text leading-relaxed">
-          Kami menggabungkan keahlian agronomi tradisional dengan inovasi teknologi untuk memberikan hasil terbaik bagi pertanian Indonesia.
+  <section id="features" className="py-32 bg-slate-50 relative overflow-hidden">
+    {/* Background Pattern */}
+    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `radial-gradient(#16a34a 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
+    <div className="absolute -top-24 right-0 w-96 h-96 bg-brand-500/5 rounded-full blur-[120px]" />
+    <div className="absolute -bottom-24 left-0 w-96 h-96 bg-accent-blue/5 rounded-full blur-[120px]" />
+
+    <div className="container mx-auto px-6 relative z-10">
+      <div className="text-center max-w-3xl mx-auto mb-24 space-y-6">
+        <h2 className="text-5xl md:text-6xl font-display font-black tracking-tight text-dark-text">Solusi Cerdas untuk Petani.</h2>
+        <div className="w-24 h-1.5 brand-gradient mx-auto rounded-full" />
+        <p className="text-xl text-muted-text leading-relaxed font-medium">
+          Kami mengintegrasikan teknologi terbaik untuk memastikan setiap jengkal lahan Anda terpantau dengan akurasi yang tak tertandingi.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
         {[
           {
             title: "IoT Real-time",
-            desc: "Pantau kelembaban, suhu, dan nutrisi tanah secara langsung dari mana saja.",
+            desc: "Pantau kelembaban, suhu, dan nutrisi tanah secara langsung dari smartphone Anda kapan pun.",
             icon: Activity,
-            color: "bg-accent-blue/10 text-accent-blue"
+            color: "bg-blue-500",
+            lightColor: "bg-blue-50 text-blue-600",
+            shadow: "shadow-blue-500/20",
+            hoverBorder: "hover:border-blue-500/40"
           },
           {
-            title: "AI Analysis",
-            desc: "Analisis cerdas untuk memprediksi waktu panen dan mendeteksi anomali pertumbuhan.",
+            title: "Analisis AI",
+            desc: "Algoritma cerdas kami memprediksi waktu panen ideal dan memberikan peringatan dini anomali.",
             icon: Zap,
-            color: "bg-brand-500/10 text-brand-600"
+            color: "bg-brand-500",
+            lightColor: "bg-brand-50 text-brand-600",
+            shadow: "shadow-brand-500/20",
+            hoverBorder: "hover:border-brand-500/40"
           },
           {
-            title: "Security & Trust",
-            desc: "Data Anda aman tersimpan dengan enkripsi tingkat tinggi untuk privasi maksimal.",
+            title: "Keamanan Data",
+            desc: "Keamanan berlapis memastikan data pertanian Anda tetap rahasia dan terlindungi sepenuhnya.",
             icon: ShieldCheck,
-            color: "bg-emerald-500/10 text-emerald-600"
+            color: "bg-accent-red",
+            lightColor: "bg-red-50 text-red-600",
+            shadow: "shadow-red-500/20",
+            hoverBorder: "hover:border-accent-red/40"
           }
         ].map((feat, i) => (
           <motion.div 
             key={i}
-            whileHover={{ y: -10 }}
-            className="glass-card p-10 border border-slate-200 hover:border-brand-500/30 transition-all"
+            whileHover={{ y: -15 }}
+            className={cn(
+              "glass-card p-12 border-2 border-slate-100 bg-white group transition-all duration-500",
+              feat.hoverBorder
+            )}
           >
-            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6", feat.color)}>
-              <feat.icon className="w-8 h-8" />
+            <div className={cn(
+              "w-20 h-20 rounded-[2rem] flex items-center justify-center mb-8 transform group-hover:rotate-12 transition-all duration-500 shadow-xl",
+              feat.color,
+              feat.shadow
+            )}>
+              <feat.icon className="w-10 h-10 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-dark-text mb-4">{feat.title}</h3>
-            <p className="text-muted-text leading-relaxed">{feat.desc}</p>
+            <div className={cn("inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-6", feat.lightColor)}>
+              Smart Technology
+            </div>
+            <h3 className="text-3xl font-black text-dark-text mb-6">{feat.title}</h3>
+            <p className="text-lg text-muted-text leading-relaxed font-medium">
+              {feat.desc}
+            </p>
+            <div className="pt-8 flex items-center gap-2 text-dark-text font-black text-sm cursor-pointer hover:gap-4 transition-all">
+              Pelajari Selengkapnya
+              <ChevronRight className="w-5 h-5 text-brand-600" />
+            </div>
           </motion.div>
         ))}
       </div>
@@ -233,29 +303,33 @@ const Testimonials = () => (
             name: "Agus Salim",
             role: "Ketua Kelompok Tani Bunga Desa",
             text: "Sistem IoT ini sangat membantu kami menghemat air hingga 40%. Sekarang pengairan sangat presisi.",
-            img: "https://i.pravatar.cc/150?u=agus"
+            img: "https://i.pravatar.cc/150?u=agus",
+            tint: "bg-blue-50/50 border-blue-100"
           },
           {
             name: "Siti Rahayu",
             role: "Pemilik Lahan Sorgum Organik",
             text: "Prediksi panen dari AI-nya sangat akurat. Kami bisa menjadwalkan pembeli lebih awal sekarang.",
-            img: "https://i.pravatar.cc/150?u=siti"
+            img: "https://i.pravatar.cc/150?u=siti",
+            tint: "bg-brand-50/50 border-brand-100"
           },
           {
             name: "Hendra Wijaya",
             role: "Agronomis",
             text: "Antarmukanya sangat mudah digunakan bahkan bagi petani yang belum mahir teknologi sekalipun.",
-            img: "https://i.pravatar.cc/150?u=hendra"
+            img: "https://i.pravatar.cc/150?u=hendra",
+            tint: "bg-red-50/30 border-red-100"
           }
         ].map((t, i) => (
-          <div key={i} className="glass-card p-10 relative bg-white border border-slate-200">
-            <Quote className="absolute top-8 right-8 w-12 h-12 text-brand-500/5" />
-            <p className="text-lg text-slate-700 italic mb-8 relative z-10">"{t.text}"</p>
-            <div className="flex items-center gap-4">
-              <img src={t.img} alt={t.name} className="w-12 h-12 rounded-full border border-brand-500/30" />
+          <div key={i} className={cn("glass-card p-10 relative bg-white border-2 group hover:scale-[1.02] transition-all duration-300", t.tint)}>
+            <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Quote className="absolute top-8 right-8 w-12 h-12 text-brand-500/10" />
+            <p className="text-xl text-slate-700 italic mb-10 relative z-10 leading-relaxed font-medium">"{t.text}"</p>
+            <div className="flex items-center gap-4 relative z-10">
+              <img src={t.img} alt={t.name} className="w-14 h-14 rounded-full border-2 border-white shadow-lg" />
               <div>
-                <p className="font-bold text-dark-text">{t.name}</p>
-                <p className="text-xs text-slate-400 uppercase tracking-widest">{t.role}</p>
+                <p className="font-black text-dark-text text-lg">{t.name}</p>
+                <p className="text-xs text-brand-600 font-black uppercase tracking-[0.2em]">{t.role}</p>
               </div>
             </div>
           </div>
@@ -278,26 +352,27 @@ const StatCard = ({ label, value, unit, icon: Icon, color, trend }: {
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    whileHover={{ y: -5 }}
-    className="glass-card p-6 bg-white border border-slate-200"
+    whileHover={{ y: -5, scale: 1.02 }}
+    className="glass-card p-6 bg-white border-2 border-slate-50 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group"
   >
-    <div className="flex items-start justify-between mb-4">
-      <div className={cn("p-3 rounded-2xl shadow-inner", color)}>
-        <Icon className="w-6 h-6" />
+    <div className="absolute top-0 right-0 w-24 h-24 brand-gradient opacity-[0.03] rounded-full translate-x-12 -translate-y-12 group-hover:scale-150 transition-transform duration-700" />
+    <div className="flex items-start justify-between mb-4 relative z-10">
+      <div className={cn("p-4 rounded-2xl shadow-lg transition-transform group-hover:rotate-12", color)}>
+        <Icon className="w-7 h-7" />
       </div>
       {trend && (
         <span className={cn(
-          "text-[10px] font-bold px-2 py-1 rounded-full",
+          "text-xs font-black px-3 py-1 rounded-full shadow-sm",
           trend.positive ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
         )}>
           {trend.positive ? '+' : '-'}{trend.value}%
         </span>
       )}
     </div>
-    <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">{label}</p>
-    <div className="flex items-baseline gap-1 mt-1">
-      <h3 className="text-3xl font-bold text-dark-text">{value}</h3>
-      <span className="text-sm font-medium text-slate-400">{unit}</span>
+    <p className="text-xs text-slate-400 font-black uppercase tracking-widest mb-1 relative z-10">{label}</p>
+    <div className="flex items-baseline gap-1 relative z-10">
+      <h3 className="text-4xl font-black text-dark-text tracking-tighter">{value}</h3>
+      <span className="text-base font-bold text-slate-400">{unit}</span>
     </div>
   </motion.div>
 );
@@ -441,9 +516,9 @@ export default function App() {
           </div>
 
           <nav className="hidden lg:flex items-center gap-10">
-            <NavLink label="Teknologi" active={view === 'landing'} onClick={() => setView('landing')} />
-            <NavLink label="Fitur" active={view === 'landing'} onClick={() => setView('landing')} />
-            <NavLink label="Testimoni" active={view === 'landing'} onClick={() => setView('landing')} />
+            <NavLink label="Teknologi" href="#home" active={view === 'landing'} onClick={() => { setView('landing'); }} />
+            <NavLink label="Fitur" href="#features" active={view === 'landing'} onClick={() => { setView('landing'); }} />
+            <NavLink label="Testimoni" href="#testimonials" active={view === 'landing'} onClick={() => { setView('landing'); }} />
           </nav>
 
           <div className="flex items-center gap-4">
@@ -488,7 +563,17 @@ export default function App() {
             </div>
             <nav className="flex flex-col gap-6">
               {['Teknologi', 'Fitur', 'Testimoni'].map(item => (
-                <button key={item} className="text-2xl font-display font-bold text-left text-slate-500 hover:text-dark-text transition-all">
+                <button 
+                  key={item} 
+                  onClick={() => {
+                    const id = item === 'Teknologi' ? '#home' : item === 'Fitur' ? '#features' : '#testimonials';
+                    const el = document.querySelector(id);
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    setMobileMenuOpen(false);
+                    setView('landing');
+                  }}
+                  className="text-2xl font-display font-bold text-left text-slate-500 hover:text-dark-text transition-all"
+                >
                   {item}
                 </button>
               ))}

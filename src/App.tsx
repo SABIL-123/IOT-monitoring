@@ -58,13 +58,15 @@ const NavLink = ({ label, active, onClick, href }: { label: string, active?: boo
       onClick();
     }}
     className={cn(
-      "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 relative overflow-hidden",
-      active 
-        ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20 scale-105" 
-        : "text-slate-400 hover:bg-slate-100 hover:text-dark-text border border-transparent hover:border-slate-100"
+      "text-sm font-black uppercase tracking-[0.15em] transition-all duration-300 relative py-2 group",
+      active ? "text-brand-600" : "text-slate-400 hover:text-dark-text"
     )}
   >
     {label}
+    <span className={cn(
+      "absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-brand-500 transition-all duration-300 rounded-full",
+      active ? "w-full opacity-100" : "w-0 opacity-0 group-hover:w-1/2 group-hover:opacity-50"
+    )} />
   </button>
 );
 
@@ -518,7 +520,7 @@ export default function App() {
             <span className="font-display font-bold text-xl brand-text-gradient hidden sm:block">Sorgummology</span>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-2 bg-slate-50/50 p-1 rounded-2xl border border-slate-100">
+          <nav className="hidden lg:flex items-center gap-8">
             <NavLink label="Teknologi" href="#home" active={view === 'landing'} onClick={() => { setView('landing'); }} />
             <NavLink label="Fitur" href="#features" active={view === 'landing'} onClick={() => { setView('landing'); }} />
             <NavLink label="Testimoni" href="#testimonials" active={view === 'landing'} onClick={() => { setView('landing'); }} />

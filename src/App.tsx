@@ -58,15 +58,11 @@ const NavLink = ({ label, active, onClick, href }: { label: string, active?: boo
       onClick();
     }}
     className={cn(
-      "text-sm font-black uppercase tracking-[0.15em] transition-all duration-300 relative py-2 group",
-      active ? "text-brand-600" : "text-slate-400 hover:text-dark-text"
+      "text-sm font-black uppercase tracking-[0.15em] transition-all duration-300 relative py-2",
+      active ? "text-brand-600 scale-110" : "text-slate-400 hover:text-dark-text hover:scale-105"
     )}
   >
     {label}
-    <span className={cn(
-      "absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-brand-500 transition-all duration-300 rounded-full",
-      active ? "w-full opacity-100" : "w-0 opacity-0 group-hover:w-1/2 group-hover:opacity-50"
-    )} />
   </button>
 );
 

@@ -58,15 +58,13 @@ const NavLink = ({ label, active, onClick, href }: { label: string, active?: boo
       onClick();
     }}
     className={cn(
-      "text-sm font-medium transition-all hover:text-brand-600 relative group",
-      active ? "text-brand-600" : "text-muted-text"
+      "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 relative overflow-hidden",
+      active 
+        ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20 scale-105" 
+        : "text-slate-400 hover:bg-slate-100 hover:text-dark-text border border-transparent hover:border-slate-100"
     )}
   >
     {label}
-    <span className={cn(
-      "absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-500 transition-all group-hover:w-full",
-      active && "w-full"
-    )} />
   </button>
 );
 
@@ -499,12 +497,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-light-bg text-dark-text selection:bg-brand-500/30">
-      {/* Universal Navigator */}
+      {/* Universal Navigator - Floating Card Style */}
       <header className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-6",
-        isScrolled ? "py-4 glass border-b border-slate-200" : "py-8 bg-transparent"
+        "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-[95%] max-w-7xl",
+        isScrolled ? "top-4" : "top-8"
       )}>
-        <div className="container mx-auto flex items-center justify-between">
+        <div className={cn(
+          "flex items-center justify-between px-6 py-3 rounded-2xl transition-all duration-500",
+          isScrolled 
+            ? "bg-white/80 backdrop-blur-xl border border-slate-200 shadow-2xl" 
+            : "bg-white/50 backdrop-blur-md border border-white/40 shadow-xl"
+        )}>
           <div 
             onClick={() => setView('landing')}
             className="flex items-center gap-3 cursor-pointer group"
@@ -512,10 +515,10 @@ export default function App() {
             <div className="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-110 transition-transform">
               <Sun className="w-6 h-6" />
             </div>
-            <span className="font-display font-bold text-xl brand-text-gradient">Sorgummology</span>
+            <span className="font-display font-bold text-xl brand-text-gradient hidden sm:block">Sorgummology</span>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-10">
+          <nav className="hidden lg:flex items-center gap-2 bg-slate-50/50 p-1 rounded-2xl border border-slate-100">
             <NavLink label="Teknologi" href="#home" active={view === 'landing'} onClick={() => { setView('landing'); }} />
             <NavLink label="Fitur" href="#features" active={view === 'landing'} onClick={() => { setView('landing'); }} />
             <NavLink label="Testimoni" href="#testimonials" active={view === 'landing'} onClick={() => { setView('landing'); }} />
@@ -525,13 +528,13 @@ export default function App() {
             <button 
               onClick={() => setView(view === 'landing' ? 'dashboard' : 'landing')}
               className={cn(
-                "hidden sm:flex px-6 py-2.5 rounded-xl font-bold text-sm transition-all",
+                "hidden sm:flex px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all",
                 view === 'landing' 
                   ? "brand-gradient text-white shadow-lg shadow-brand-500/20 hover:scale-105" 
                   : "bg-slate-100 text-dark-text border border-slate-200 hover:bg-slate-200"
               )}
             >
-              {view === 'landing' ? 'Buka Dasbor' : 'Kembali Beranda'}
+              {view === 'landing' ? 'Buka Dasbor' : 'Beranda'}
             </button>
             <button 
               onClick={() => setMobileMenuOpen(true)}

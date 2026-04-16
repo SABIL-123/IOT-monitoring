@@ -393,7 +393,7 @@ const DashboardView = () => {
             <div className="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
               <Activity className="w-6 h-6" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold brand-text-gradient">Dasbor Monitor</h1>
+            <h1 className="text-3xl md:text-4xl font-display font-bold brand-text-gradient">Dasborard Monitor</h1>
           </div>
           <p className="text-muted-text flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -532,7 +532,7 @@ export default function App() {
                   : "bg-slate-100 text-dark-text border border-slate-200 hover:bg-slate-200"
               )}
             >
-              {view === 'landing' ? 'Buka Dasbor' : 'Beranda'}
+              {view === 'landing' ? 'Buka Dasboard' : 'Beranda'}
             </button>
             <button 
               onClick={() => setMobileMenuOpen(true)}
@@ -583,7 +583,7 @@ export default function App() {
                 onClick={() => { setView('dashboard'); setMobileMenuOpen(false); }}
                 className="w-full py-4 brand-gradient text-white rounded-2xl font-bold"
               >
-                Buka Dasbor
+                Buka Dasborard
               </button>
             </nav>
           </motion.div>

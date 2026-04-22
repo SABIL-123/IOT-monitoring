@@ -534,6 +534,7 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
   const [selectedPlotId, setSelectedPlotId] = useState<string>('P-01');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSensor, setEditingSensor] = useState<PlotSensor | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Weekly data simulation state
   const [weeklyData, setWeeklyData] = useState<{ day: string; value: number }[]>([]);
@@ -712,7 +713,7 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F1F5F9] text-dark-text overflow-hidden">
+    <div className="flex min-h-screen bg-[#F1F5F9] text-dark-text overflow-x-hidden">
       
       <SensorModal 
         isOpen={isModalOpen} 
@@ -721,13 +722,34 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
         onSave={handleSaveSensor}
       />
 
+      {/* Sidebar Overlay for Mobile */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar Navigation */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-screen fixed left-0 top-0 z-40">
-        <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-          <div className="w-8 h-8 brand-gradient rounded-lg flex items-center justify-center text-white shadow-lg">
-            <Activity className="w-5 h-5" />
+      <aside className={cn(
+        "w-64 bg-white border-r border-slate-200 flex flex-col h-screen fixed left-0 top-0 z-50 transition-transform duration-300 transform lg:translate-x-0",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 brand-gradient rounded-lg flex items-center justify-center text-white shadow-lg">
+              <Activity className="w-5 h-5" />
+            </div>
+            <p className="font-black tracking-tight text-lg brand-text-gradient">Sorgummology</p>
           </div>
-          <p className="font-black tracking-tight text-lg brand-text-gradient">Sorgummology</p>
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-slate-400">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <nav className="flex-grow p-4 space-y-2 overflow-y-auto pt-6">
@@ -735,7 +757,10 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
           {sidebarMenus.map((menu) => (
             <button
               key={menu.id}
-              onClick={() => setActiveTab(menu.id as any)}
+              onClick={() => {
+                setActiveTab(menu.id as any);
+                setIsSidebarOpen(false);
+              }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all group",
                 activeTab === menu.id 
@@ -770,15 +795,23 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-grow ml-64 p-8 min-h-screen">
+      <main className="flex-grow lg:ml-64 p-4 sm:p-8 min-h-screen">
         <div className="max-w-6xl mx-auto space-y-8">
           
           <header className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">{activeTab === 'Overview' ? 'Pusat Kontrol Lahan' : `Monitoring ${activeTab}`}</h1>
-              <p className="text-slate-500 font-medium">{filteredPlots.length} Lahan terdeteksi dengan konfigurasi ini.</p>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden p-3 bg-white border border-slate-200 rounded-2xl text-slate-500 shadow-sm"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{activeTab === 'Overview' ? 'Pusat Kontrol Lahan' : `Monitoring ${activeTab}`}</h1>
+                <p className="text-slate-500 font-medium text-xs sm:text-sm">{filteredPlots.length} Lahan terdeteksi.</p>
+              </div>
             </div>
-            <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="hidden sm:flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
                <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black">
                  SERVER: STABLE
                </div>
@@ -978,6 +1011,38 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
                 </div>
 
                 <div className="space-y-6">
+                  <div className="p-5 bg-white/5 border border-white/10 rounded-[2rem]">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Analisis Status Lahan</p>
+                    <div className={cn(
+                      "p-4 rounded-2xl flex items-center gap-4 border transition-all duration-500",
+                      insight.msg.includes("Optimal") 
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
+                        : "bg-rose-500/10 border-rose-500/20 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.1)]"
+                    )}>
+                      {insight.msg.includes("Optimal") ? (
+                        <>
+                          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                            <ShieldCheck className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Status: NORMAL</p>
+                            <p className="text-[10px] font-bold opacity-70">Lahan siap panen & sehat.</p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
+                            <Info className="w-6 h-6 rotate-180" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Status: TIDAK AMAN</p>
+                            <p className="text-[10px] font-bold opacity-70 text-rose-400/80">Butuh penanganan segera!</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="p-5 bg-white/5 border border-white/10 rounded-[2rem] flex justify-between items-center">
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rata-rata Mingguan</p>

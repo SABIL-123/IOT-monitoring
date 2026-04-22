@@ -26,7 +26,8 @@ import {
   Facebook,
   Quote,
   Map,
-  Database
+  Database,
+  Power
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -35,9 +36,10 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  AreaChart,
-  Area,
-  Legend
+  BarChart,
+  Bar,
+  Legend,
+  Cell
 } from 'recharts';
 import { cn } from './lib/utils';
 import { MOCK_IOT_DATA } from './constants';
@@ -416,12 +418,126 @@ interface Plot {
   sensors: PlotSensor[];
 }
 
+const SensorModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  sensor 
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  onSave: (data: Partial<PlotSensor>) => void,
+  sensor?: PlotSensor | null
+}) => {
+  const [formData, setFormData] = useState<Partial<PlotSensor>>({
+    type: 'Moisture',
+    value: 0,
+    status: 'active'
+  });
+
+  useEffect(() => {
+    if (sensor) {
+      setFormData({
+        type: sensor.type,
+        value: sensor.value,
+        status: sensor.status
+      });
+    }
+  }, [sensor]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-dark-text/40 backdrop-blur-sm">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden"
+      >
+        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div>
+            <h3 className="text-xl font-black">{sensor ? 'Edit Sensor Node' : 'Register New Sensor'}</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Laboratory Equipment Config</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white rounded-xl transition-all">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+
+        <div className="p-8 space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Jenis Sensor</label>
+            <select 
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+            >
+              <option value="Cahaya">Pencahayaan (Lux)</option>
+              <option value="Angin">Kecepatan Angin (km/h)</option>
+              <option value="pH">Kandungan pH (pH)</option>
+              <option value="Moisture">Kelembaban (%)</option>
+            </select>
+          </div>
+
+          <div className="p-6 bg-brand-50 border border-brand-100 rounded-3xl flex flex-col items-center text-center">
+            <Activity className="w-8 h-8 text-brand-600 mb-2" />
+            <p className="text-[10px] font-black uppercase text-brand-400 tracking-widest">Real-time Reading</p>
+            <p className="text-3xl font-black text-brand-700 tracking-tighter">
+              {sensor ? sensor.value : '--'}
+            </p>
+            <p className="text-[9px] text-brand-600/60 mt-1">*Nilai diperbarui otomatis dari perangkat keras.</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status Hardware</label>
+            <div className="grid grid-cols-3 gap-3">
+              {(['active', 'warning', 'inactive'] as SensorStatus[]).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, status: st })}
+                  className={cn(
+                    "py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                    formData.status === st 
+                      ? (st === 'active' ? "bg-emerald-500 text-white" : st === 'warning' ? "bg-amber-500 text-white" : "bg-slate-500 text-white")
+                      : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                  )}
+                >
+                  {st}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-8 bg-slate-50 flex gap-4">
+          <button 
+            onClick={onClose}
+            className="flex-1 py-4 font-black text-xs uppercase tracking-widest text-slate-400 hover:text-dark-text transition-all"
+          >
+            Batalkan
+          </button>
+          <button 
+            onClick={() => onSave(formData)}
+            className="flex-[2] py-4 brand-gradient text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+          >
+            {sensor ? 'Simpan Perubahan' : 'Instal Sensor'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 const DashboardView = ({ onBack }: { onBack: () => void }) => {
   const [activeTab, setActiveTab] = useState<'Overview' | SensorType>('Overview');
   const [selectedPlotId, setSelectedPlotId] = useState<string>('P-01');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSensor, setEditingSensor] = useState<PlotSensor | null>(null);
   
+  // Weekly data simulation state
+  const [weeklyData, setWeeklyData] = useState<{ day: string; value: number }[]>([]);
+
   // Local state for CRUD simulation
   const [plots, setPlots] = useState<Plot[]>([
     {
@@ -465,47 +581,146 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
 
   const selectedPlot = plots.find(p => p.id === selectedPlotId) || plots[0];
   
-  // Filter logic: Only show plots that have the selected sensor type if not Overview
+  // Generate weekly chart data when plot or tab changes
+  useEffect(() => {
+    const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    const baseVal = activeTab === 'Overview' 
+      ? (selectedPlot.sensors[0]?.value || 50) 
+      : (selectedPlot.sensors.find(s => s.type === activeTab)?.value || 50);
+
+    const data = days.map(day => ({
+      day,
+      value: Math.max(0, Math.floor(baseVal + (Math.random() * 20 - 10)))
+    }));
+    setWeeklyData(data);
+  }, [selectedPlotId, activeTab, selectedPlot.sensors]);
+
+  const avgValue = weeklyData.length > 0 
+    ? Math.round(weeklyData.reduce((acc, curr) => acc + curr.value, 0) / weeklyData.length)
+    : 0;
+
+  const trend = weeklyData.length > 1 
+    ? (weeklyData[weeklyData.length - 1].value >= weeklyData[0].value ? 'naik' : 'turun')
+    : 'stabil';
+  
+  // Filter logic
   const filteredPlots = activeTab === 'Overview' 
     ? plots 
     : plots.filter(p => p.sensors.some(s => s.type === activeTab));
 
-  // --- CRUD Handlers ---
-  const handleAddSensor = (type: SensorType) => {
-    const newSensor: PlotSensor = {
-      id: `S${Date.now()}`,
-      type,
-      value: 0,
-      unit: type === 'Cahaya' ? 'lux' : type === 'Angin' ? 'km/h' : type === 'pH' ? 'pH' : '%',
-      status: 'active'
+  // --- CRUD Actions ---
+  const openAddModal = () => {
+    setEditingSensor(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (sensor: PlotSensor) => {
+    setEditingSensor(sensor);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveSensor = (data: Partial<PlotSensor>) => {
+    // For simulation, if creating, assign a random value based on type
+    const simulatedValue = editingSensor ? editingSensor.value : (
+      data.type === 'Cahaya' ? Math.floor(Math.random() * 1000) + 200 :
+      data.type === 'pH' ? Number((Math.random() * 3 + 4.5).toFixed(1)) :
+      data.type === 'Angin' ? Math.floor(Math.random() * 30) + 5 :
+      Math.floor(Math.random() * 50) + 10
+    );
+
+    if (editingSensor) {
+      // Update
+      setPlots(prev => prev.map(p => 
+        p.id === selectedPlotId 
+          ? { 
+              ...p, 
+              sensors: p.sensors.map(s => s.id === editingSensor.id ? { 
+                ...s, 
+                ...data, 
+                unit: data.type === 'Cahaya' ? 'lux' : data.type === 'Angin' ? 'km/h' : data.type === 'pH' ? 'pH' : '%' 
+              } : s) 
+            }
+          : p
+      ));
+    } else {
+      // Create
+      const newSensor: PlotSensor = {
+        id: `S${Date.now()}`,
+        type: data.type || 'Moisture',
+        value: simulatedValue,
+        unit: data.type === 'Cahaya' ? 'lux' : data.type === 'Angin' ? 'km/h' : data.type === 'pH' ? 'pH' : '%',
+        status: data.status || 'active'
+      };
+      
+      setPlots(prev => prev.map(p => 
+        p.id === selectedPlotId 
+          ? { ...p, sensors: [...p.sensors, newSensor] }
+          : p
+      ));
+    }
+    setIsModalOpen(false);
+  };
+
+  const toggleSensorStatus = (sensorId: string) => {
+    setPlots(prev => prev.map(p => 
+      p.id === selectedPlotId 
+        ? { 
+            ...p, 
+            sensors: p.sensors.map(s => s.id === sensorId ? { 
+              ...s, 
+              status: s.status === 'inactive' ? 'active' : 'inactive' 
+            } : s) 
+          }
+        : p
+    ));
+  };
+
+  const getHealthInsight = () => {
+    const moisture = selectedPlot.sensors.find(s => s.type === 'Moisture')?.value;
+    const ph = selectedPlot.sensors.find(s => s.type === 'pH')?.value;
+    const warningSensors = selectedPlot.sensors.filter(s => s.status === 'warning');
+
+    if (warningSensors.length > 0) return { 
+      msg: "Terdeteksi anomali pada perangkat keras. Periksa node sensor.",
+      color: "text-amber-600 bg-amber-50"
+    };
+    if (moisture !== undefined && moisture < 20) return { 
+      msg: "Lahan sangat kering. Butuh pengairan segera (Kesehatan di bawah rata-rata).",
+      color: "text-rose-600 bg-rose-50 border-rose-100"
+    };
+    if (ph !== undefined && (ph < 5 || ph > 8)) return { 
+      msg: "Kadar pH tidak ideal. Kesehatan tanah menurun (Butuh pemupukan korektif).",
+      color: "text-rose-600 bg-rose-50 border-rose-100"
     };
     
-    setPlots(prev => prev.map(p => 
-      p.id === selectedPlotId 
-        ? { ...p, sensors: [...p.sensors, newSensor] }
-        : p
-    ));
+    return { 
+      msg: "Kondisi Lahan Optimal. Seluruh parameter berada pada rentang ideal.",
+      color: "text-emerald-600 bg-emerald-50 border-emerald-100"
+    };
   };
+
+  const insight = getHealthInsight();
 
   const handleDeleteSensor = (sensorId: string) => {
-    setPlots(prev => prev.map(p => 
-      p.id === selectedPlotId 
-        ? { ...p, sensors: p.sensors.filter(s => s.id !== sensorId) }
-        : p
-    ));
-  };
-
-  const handleUpdateSensor = (sensorId: string, newValue: number) => {
-    setPlots(prev => prev.map(p => 
-      p.id === selectedPlotId 
-        ? { ...p, sensors: p.sensors.map(s => s.id === sensorId ? { ...s, value: newValue } : s) }
-        : p
-    ));
+    if (window.confirm('Hapus node sensor ini dari sistem?')) {
+      setPlots(prev => prev.map(p => 
+        p.id === selectedPlotId 
+          ? { ...p, sensors: p.sensors.filter(s => s.id !== sensorId) }
+          : p
+      ));
+    }
   };
 
   return (
     <div className="flex min-h-screen bg-[#F1F5F9] text-dark-text overflow-hidden">
       
+      <SensorModal 
+        isOpen={isModalOpen} 
+        sensor={editingSensor}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveSensor}
+      />
+
       {/* Sidebar Navigation */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-screen fixed left-0 top-0 z-40">
         <div className="p-6 border-b border-slate-100 flex items-center gap-3">
@@ -569,6 +784,25 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
                </div>
             </div>
           </header>
+
+          {/* AI Health Insight Banner */}
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            key={selectedPlotId}
+            className={cn(
+              "p-6 rounded-[2rem] border flex items-center gap-5 shadow-sm transition-all duration-500",
+              insight.color
+            )}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-white/50 backdrop-blur-md flex items-center justify-center shadow-inner">
+              <Info className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60 leading-none mb-1">Status Analitik Lahan: {selectedPlot.name}</p>
+              <p className="text-sm font-black tracking-tight">{insight.msg}</p>
+            </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
@@ -637,18 +871,11 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
                   </div>
                   <div className="flex gap-2">
                     <button 
-                      onClick={() => handleAddSensor('Moisture')}
-                      className="p-2.5 bg-slate-100 hover:bg-brand-500 hover:text-white rounded-xl transition-all shadow-sm group"
-                      title="Tambah Sensor Moist"
+                      onClick={openAddModal}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 brand-gradient text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-500/20 hover:scale-105 active:scale-95 transition-all"
                     >
-                      <Droplets className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => handleAddSensor('pH')}
-                      className="p-2.5 bg-slate-100 hover:bg-brand-500 hover:text-white rounded-xl transition-all shadow-sm"
-                      title="Tambah Sensor pH"
-                    >
-                      <Activity className="w-5 h-5" />
+                      <Zap className="w-4 h-4" />
+                      Instal Perangkat
                     </button>
                   </div>
                 </div>
@@ -658,8 +885,12 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
                     selectedPlot.sensors.map((sensor) => (
                       <div key={sensor.id} className="group p-5 rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:bg-white hover:shadow-xl hover:border-brand-100 transition-all">
                         <div className="flex items-center gap-5">
-                          <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-brand-600 shadow-sm relative overflow-hidden">
-                             <div className="absolute top-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full translate-x-1/3 -translate-y-1/3 shadow-sm" />
+                          <div className={cn(
+                            "w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm relative overflow-hidden transition-all",
+                            sensor.status === 'active' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                            sensor.status === 'warning' ? "bg-amber-50 text-amber-600 border border-amber-100" :
+                            "bg-slate-100 text-slate-400 border border-slate-200"
+                          )}>
                              {sensor.type === 'Cahaya' ? <Sun className="w-6 h-6" /> : 
                               sensor.type === 'Angin' ? <Wind className="w-6 h-6" /> :
                               sensor.type === 'pH' ? <Activity className="w-6 h-6" /> : <Droplets className="w-6 h-6" />}
@@ -667,26 +898,44 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
                           <div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{sensor.type} Node</p>
                             <div className="flex items-center gap-2">
-                              <p className="text-xl font-black text-dark-text">{sensor.value}</p>
+                              <p className="text-xl font-black text-dark-text tracking-tighter">{sensor.value}</p>
                               <span className="text-[10px] font-bold text-slate-400 uppercase">{sensor.unit}</span>
+                              <span className={cn(
+                                "ml-2 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
+                                sensor.status === 'active' ? "bg-emerald-100 text-emerald-600" :
+                                sensor.status === 'warning' ? "bg-amber-100 text-amber-600" :
+                                "bg-slate-200 text-slate-500"
+                              )}>
+                                {sensor.status}
+                              </span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <div className="flex flex-col gap-1 items-end mr-4">
-                             <input 
-                               type="range" 
-                               min="0" max={sensor.type === 'Cahaya' ? 2000 : 100} 
-                               value={sensor.value}
-                               onChange={(e) => handleUpdateSensor(sensor.id, Number(e.target.value))}
-                               className="w-24 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-500"
-                             />
-                             <span className="text-[8px] font-bold text-slate-300 uppercase">Simulasi Data</span>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => toggleSensorStatus(sensor.id)}
+                            className={cn(
+                              "p-3 border rounded-xl transition-all shadow-sm",
+                              sensor.status === 'inactive' 
+                                ? "bg-rose-50 border-rose-100 text-rose-500 hover:bg-emerald-50 hover:text-emerald-500 hover:border-emerald-100" 
+                                : "bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100"
+                            )}
+                            title={sensor.status === 'inactive' ? 'Aktifkan Sensor' : 'Matikan Sensor'}
+                          >
+                            <Power className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => openEditModal(sensor)}
+                            className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-brand-500 hover:border-brand-200 rounded-xl transition-all shadow-sm"
+                            title="Konfigurasi Sensor"
+                          >
+                            <Settings className="w-5 h-5" />
+                          </button>
                           <button 
                             onClick={() => handleDeleteSensor(sensor.id)}
-                            className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                            className="p-3 bg-white border border-slate-200 text-slate-300 hover:text-rose-500 hover:border-rose-200 rounded-xl transition-all shadow-sm"
+                            title="Hapus Sensor"
                           >
                             <X className="w-5 h-5" />
                           </button>
@@ -694,8 +943,10 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
                       </div>
                     ))
                   ) : (
-                    <div className="py-10 text-center border-2 border-dashed border-slate-100 rounded-3xl">
-                      <p className="text-slate-400 font-bold text-sm italic">Belum ada sensor terpasang pada lahan ini.</p>
+                    <div className="py-16 text-center border-2 border-dashed border-slate-100 rounded-[2.5rem]">
+                      <Database className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                      <p className="text-slate-400 font-bold text-sm">Belum ada sensor yang terdaftar pada lahan ini.</p>
+                      <button onClick={openAddModal} className="mt-4 text-brand-500 font-black text-xs uppercase tracking-widest hover:underline">Tambah Sekarang</button>
                     </div>
                   )}
                 </div>
@@ -706,34 +957,58 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
             <div className="space-y-8">
               <div className="bg-dark-text text-white p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/20 rounded-full blur-3xl" />
-                <h3 className="text-2xl font-black mb-6">Unit Stats</h3>
+                <h3 className="text-2xl font-black mb-6">Unit Stats (7 Hari)</h3>
+                
+                {/* Weekly Weekly Chart */}
+                <div className="h-40 w-full mb-8">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyData}>
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}
+                        itemStyle={{ color: '#10b981' }}
+                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        {weeklyData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index === weeklyData.length - 1 ? '#10b981' : '#10b98144'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
                 <div className="space-y-6">
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Moisture Avg</p>
-                    <p className="text-2xl font-black text-emerald-400">42%</p>
+                  <div className="p-5 bg-white/5 border border-white/10 rounded-[2rem] flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rata-rata Mingguan</p>
+                      <p className="text-3xl font-black text-emerald-400">{avgValue}</p>
+                    </div>
+                    <div className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1",
+                      trend === 'naik' ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+                    )}>
+                      {trend === 'naik' ? <ArrowRight className="w-3 h-3 -rotate-45" /> : <ArrowRight className="w-3 h-3 rotate-45" />}
+                      Trend {trend}
+                    </div>
                   </div>
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Signal Health</p>
-                    <div className="flex items-end gap-1 mt-1">
-                      <div className="w-1.5 h-3 bg-emerald-500 rounded-full" />
-                      <div className="w-1.5 h-5 bg-emerald-500 rounded-full" />
-                      <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
-                      <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
-                      <span className="ml-2 font-black text-lg">94%</span>
+                  
+                  <div className="p-5 bg-white/5 border border-white/10 rounded-[2rem]">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status Lahan</p>
+                    <div className="flex items-center gap-3 mt-2">
+                       <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                       <span className="font-black text-sm uppercase tracking-wide">Sync: Terhubung</span>
                     </div>
                   </div>
                 </div>
-                <button className="w-full mt-8 py-4 brand-gradient rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-500/20 active:scale-95 transition-all">
-                  Refresh Global Nodes
-                </button>
               </div>
 
               <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
                 <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 mb-6">Admin Logs</h4>
                 <div className="space-y-4">
                   {[
-                    { time: '10:42', msg: 'Sensor pH P-01 Updated', type: 'info' },
-                    { time: '09:15', msg: 'System login from ID-02', type: 'system' },
+                    { time: '10:42', msg: 'Update Parameter P-01', type: 'info' },
+                    { time: '09:15', msg: 'Sistem Sinkronisasi Berhasil', type: 'system' },
+                    { time: '07:30', msg: 'Log Masuk: Admin Tani', type: 'system' },
                   ].map((log, i) => (
                     <div key={i} className="flex gap-3 text-[11px] font-bold">
                        <span className="font-mono text-slate-300">{log.time}</span>
@@ -769,54 +1044,56 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-light-bg text-dark-text selection:bg-brand-500/30">
-      {/* Universal Navigator - Floating Card Style */}
-      <header className={cn(
-        "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-[95%] max-w-7xl",
-        isScrolled ? "top-4" : "top-8"
-      )}>
-        <div className={cn(
-          "flex items-center justify-between px-6 py-3 rounded-2xl transition-all duration-500",
-          isScrolled 
-            ? "bg-white/80 backdrop-blur-xl border border-slate-200 shadow-2xl" 
-            : "bg-white/50 backdrop-blur-md border border-white/40 shadow-xl"
+      {/* Universal Navigator - Floating Card Style (Only visible in landing) */}
+      {view === 'landing' && (
+        <header className={cn(
+          "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-[95%] max-w-7xl",
+          isScrolled ? "top-4" : "top-8"
         )}>
-          <div 
-            onClick={() => setView('landing')}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
-            <div className="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-110 transition-transform">
-              <Sun className="w-6 h-6" />
+          <div className={cn(
+            "flex items-center justify-between px-6 py-3 rounded-2xl transition-all duration-500",
+            isScrolled 
+              ? "bg-white/80 backdrop-blur-xl border border-slate-200 shadow-2xl" 
+              : "bg-white/50 backdrop-blur-md border border-white/40 shadow-xl"
+          )}>
+            <div 
+              onClick={() => setView('landing')}
+              className="flex items-center gap-3 cursor-pointer group"
+            >
+              <div className="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-110 transition-transform">
+                <Sun className="w-6 h-6" />
+              </div>
+              <span className="font-display font-bold text-xl brand-text-gradient hidden sm:block">Sorgummology</span>
             </div>
-            <span className="font-display font-bold text-xl brand-text-gradient hidden sm:block">Sorgummology</span>
-          </div>
 
-          <nav className="hidden lg:flex items-center gap-8">
-            <NavLink label="Teknologi" href="#home" active={view === 'landing'} onClick={() => { setView('landing'); }} />
-            <NavLink label="Fitur" href="#features" active={view === 'landing'} onClick={() => { setView('landing'); }} />
-            <NavLink label="Testimoni" href="#testimonials" active={view === 'landing'} onClick={() => { setView('landing'); }} />
-          </nav>
+            <nav className="hidden lg:flex items-center gap-8">
+              <NavLink label="Teknologi" href="#home" active={view === 'landing'} onClick={() => { setView('landing'); }} />
+              <NavLink label="Fitur" href="#features" active={view === 'landing'} onClick={() => { setView('landing'); }} />
+              <NavLink label="Testimoni" href="#testimonials" active={view === 'landing'} onClick={() => { setView('landing'); }} />
+            </nav>
 
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setView(view === 'landing' ? 'dashboard' : 'landing')}
-              className={cn(
-                "hidden sm:flex px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all",
-                view === 'landing' 
-                  ? "brand-gradient text-white shadow-lg shadow-brand-500/20 hover:scale-105" 
-                  : "bg-slate-100 text-dark-text border border-slate-200 hover:bg-slate-200"
-              )}
-            >
-              {view === 'landing' ? 'Buka Dasboard' : 'Beranda'}
-            </button>
-            <button 
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 text-slate-500 hover:text-dark-text transition-colors"
-            >
-              <Menu className="w-7 h-7" />
-            </button>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setView(view === 'landing' ? 'dashboard' : 'landing')}
+                className={cn(
+                  "hidden sm:flex px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-brand-500/10 active:scale-95",
+                  view === 'landing' 
+                    ? "brand-gradient text-white hover:scale-105" 
+                    : "bg-slate-100 text-dark-text border border-slate-200 hover:bg-slate-200"
+                )}
+              >
+                {view === 'landing' ? 'Buka Dasboard' : 'Beranda'}
+              </button>
+              <button 
+                onClick={() => setMobileMenuOpen(true)}
+                className="lg:hidden p-2 text-slate-500 hover:text-dark-text transition-colors"
+              >
+                <Menu className="w-7 h-7" />
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Mobile Menu */}
       <AnimatePresence>
@@ -908,59 +1185,61 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="bg-slate-950 border-t border-white/5 pt-24 pb-12">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
-            <div className="lg:col-span-1 space-y-6">
-              <div className="flex items-center gap-3">
-                <Sun className="w-8 h-8 text-brand-500" />
-                <span className="font-display font-bold text-2xl brand-text-gradient">Sorgummology</span>
+      {view === 'landing' && (
+        <footer className="bg-slate-950 border-t border-white/5 pt-24 pb-12">
+          <div className="container mx-auto px-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+              <div className="lg:col-span-1 space-y-6">
+                <div className="flex items-center gap-3">
+                  <Sun className="w-8 h-8 text-brand-500" />
+                  <span className="font-display font-bold text-2xl brand-text-gradient">Sorgummology</span>
+                </div>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Ekosistem cerdas untuk masa depan kedaulatan pangan melalui sorgum.
+                </p>
+                <div className="flex gap-4">
+                  <Instagram className="w-5 h-5 text-slate-500 hover:text-brand-500 cursor-pointer transition-colors" />
+                  <Twitter className="w-5 h-5 text-slate-500 hover:text-brand-500 cursor-pointer transition-colors" />
+                  <Facebook className="w-5 h-5 text-slate-500 hover:text-brand-500 cursor-pointer transition-colors" />
+                </div>
               </div>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Ekosistem cerdas untuk masa depan kedaulatan pangan melalui sorgum.
-              </p>
-              <div className="flex gap-4">
-                <Instagram className="w-5 h-5 text-slate-500 hover:text-brand-500 cursor-pointer transition-colors" />
-                <Twitter className="w-5 h-5 text-slate-500 hover:text-brand-500 cursor-pointer transition-colors" />
-                <Facebook className="w-5 h-5 text-slate-500 hover:text-brand-500 cursor-pointer transition-colors" />
+
+              <div>
+                <h4 className="text-white font-bold mb-6 font-display uppercase tracking-widest text-xs">Produk</h4>
+                <ul className="space-y-4">
+                  <FooterLink label="IoT Monitoring" />
+                  <FooterLink label="AI Analytics" />
+                  <FooterLink label="Smart Supply Chain" />
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-white font-bold mb-6 font-display uppercase tracking-widest text-xs">Tautan</h4>
+                <ul className="space-y-4">
+                  <FooterLink label="Tentang Kami" />
+                  <FooterLink label="Kisah Petani" />
+                  <FooterLink label="Pusat Bantuan" />
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-white font-bold mb-6 font-display uppercase tracking-widest text-xs">Hubungi</h4>
+                <ul className="space-y-4">
+                  <li className="flex items-center gap-3 text-sm text-slate-400">
+                    <Mail className="w-4 h-4 text-brand-500" />
+                    kontak@sorgummology.id
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-slate-400">
+                    <MapPin className="w-4 h-4 text-brand-500" />
+                    Jawa Timur, Indonesia
+                  </li>
+                </ul>
               </div>
             </div>
-
-            <div>
-              <h4 className="text-white font-bold mb-6 font-display uppercase tracking-widest text-xs">Produk</h4>
-              <ul className="space-y-4">
-                <FooterLink label="IoT Monitoring" />
-                <FooterLink label="AI Analytics" />
-                <FooterLink label="Smart Supply Chain" />
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold mb-6 font-display uppercase tracking-widest text-xs">Tautan</h4>
-              <ul className="space-y-4">
-                <FooterLink label="Tentang Kami" />
-                <FooterLink label="Kisah Petani" />
-                <FooterLink label="Pusat Bantuan" />
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold mb-6 font-display uppercase tracking-widest text-xs">Hubungi</h4>
-              <ul className="space-y-4">
-                <li className="flex items-center gap-3 text-sm text-slate-400">
-                  <Mail className="w-4 h-4 text-brand-500" />
-                  kontak@sorgummology.id
-                </li>
-                <li className="flex items-center gap-3 text-sm text-slate-400">
-                  <MapPin className="w-4 h-4 text-brand-500" />
-                  Jawa Timur, Indonesia
-                </li>
-              </ul>
-            </div>
+            <p className="text-xs text-slate-600 text-center border-t border-white/5 pt-8">© 2026 Sorgummology. Seluruh Hak Cipta Dilindungi.</p>
           </div>
-          <p className="text-xs text-slate-600 text-center border-t border-white/5 pt-8">© 2026 Sorgummology. Seluruh Hak Cipta Dilindungi.</p>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

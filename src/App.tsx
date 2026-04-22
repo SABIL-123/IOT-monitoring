@@ -24,7 +24,9 @@ import {
   Instagram,
   Twitter,
   Facebook,
-  Quote
+  Quote,
+  Map,
+  Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -393,142 +395,340 @@ const Testimonials = () => {
   );
 };
 
-// --- Dashboard Component ---
+// --- Dashboard Component (Monitoring Lab Concept) ---
 
-const StatCard = ({ label, value, unit, icon: Icon, color, trend }: { 
-  label: string, 
-  value: string | number, 
-  unit: string, 
-  icon: any, 
-  color: string,
-  trend?: { value: string, positive: boolean }
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    whileHover={{ y: -5, scale: 1.02 }}
-    className="glass-card p-6 bg-white border-2 border-slate-50 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group"
-  >
-    <div className="absolute top-0 right-0 w-24 h-24 brand-gradient opacity-[0.03] rounded-full translate-x-12 -translate-y-12 group-hover:scale-150 transition-transform duration-700" />
-    <div className="flex items-start justify-between mb-4 relative z-10">
-      <div className={cn("p-4 rounded-2xl shadow-lg transition-transform group-hover:rotate-12", color)}>
-        <Icon className="w-7 h-7" />
-      </div>
-      {trend && (
-        <span className={cn(
-          "text-xs font-black px-3 py-1 rounded-full shadow-sm",
-          trend.positive ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
-        )}>
-          {trend.positive ? '+' : '-'}{trend.value}%
-        </span>
-      )}
-    </div>
-    <p className="text-xs text-slate-400 font-black uppercase tracking-widest mb-1 relative z-10">{label}</p>
-    <div className="flex items-baseline gap-1 relative z-10">
-      <h3 className="text-4xl font-black text-dark-text tracking-tighter">{value}</h3>
-      <span className="text-base font-bold text-slate-400">{unit}</span>
-    </div>
-  </motion.div>
-);
+type SensorStatus = 'active' | 'inactive' | 'warning';
+type PlotStatus = 'optimal' | 'maintenance' | 'critical';
 
-const DashboardView = () => {
-  const [lastUpdate, setLastUpdate] = useState(new Date());
-  const [isRefreshing, setIsRefreshing] = useState(false);
+interface PlotSensor {
+  type: string;
+  value: number;
+  unit: string;
+  status: SensorStatus;
+}
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      setLastUpdate(new Date());
-    }, 1000);
-  };
+interface Plot {
+  id: string;
+  name: string;
+  status: PlotStatus;
+  sensors: PlotSensor[];
+}
+
+const DashboardView = ({ onBack }: { onBack: () => void }) => {
+  const [selectedPlotId, setSelectedPlotId] = useState<string>('P-01');
+  const [activeFilter, setActiveFilter] = useState('Semua');
+
+  const plots: Plot[] = [
+    {
+      id: 'P-01',
+      name: 'Plot Utara A1',
+      status: 'optimal',
+      sensors: [
+        { type: 'Soil Moisture', value: 45, unit: '%', status: 'active' },
+        { type: 'Soil pH', value: 6.5, unit: 'pH', status: 'active' },
+        { type: 'Nitrogen', value: 120, unit: 'ppm', status: 'active' },
+      ]
+    },
+    {
+      id: 'P-02',
+      name: 'Plot Utara A2',
+      status: 'maintenance',
+      sensors: [
+        { type: 'Soil Moisture', value: 12, unit: '%', status: 'warning' },
+        { type: 'Soil pH', value: 5.2, unit: 'pH', status: 'active' },
+        { type: 'Nitrogen', value: 0, unit: 'ppm', status: 'inactive' },
+      ]
+    },
+    {
+      id: 'P-03',
+      name: 'Plot Timur B1',
+      status: 'optimal',
+      sensors: [
+        { type: 'Soil Moisture', value: 42, unit: '%', status: 'active' },
+        { type: 'Soil pH', value: 6.8, unit: 'pH', status: 'active' },
+        { type: 'Nitrogen', value: 115, unit: 'ppm', status: 'active' },
+      ]
+    },
+    {
+      id: 'P-04',
+      name: 'Plot Timur B2',
+      status: 'critical',
+      sensors: [
+        { type: 'Soil Moisture', value: 85, unit: '%', status: 'warning' },
+        { type: 'Soil pH', value: 4.1, unit: 'pH', status: 'active' },
+        { type: 'Nitrogen', value: 210, unit: 'ppm', status: 'warning' },
+      ]
+    },
+    { id: 'P-05', name: 'Plot Barat C1', status: 'optimal', sensors: [{ type: 'Soil Moisture', value: 38, unit: '%', status: 'active' }, { type: 'Soil pH', value: 6.2, unit: 'pH', status: 'active' }] },
+    { id: 'P-06', name: 'Plot Barat C2', status: 'optimal', sensors: [{ type: 'Soil Moisture', value: 40, unit: '%', status: 'active' }, { type: 'Soil pH', value: 6.3, unit: 'pH', status: 'active' }] },
+    { id: 'P-07', name: 'Plot Selatan D1', status: 'maintenance', sensors: [{ type: 'Soil Moisture', value: 15, unit: '%', status: 'warning' }, { type: 'Soil pH', value: 5.8, unit: 'pH', status: 'active' }] },
+    { id: 'P-08', name: 'Plot Selatan D2', status: 'optimal', sensors: [{ type: 'Soil Moisture', value: 44, unit: '%', status: 'active' }, { type: 'Soil pH', value: 6.6, unit: 'pH', status: 'active' }] },
+  ];
+
+  const selectedPlot = plots.find(p => p.id === selectedPlotId) || plots[0];
+
+  const chartData = [
+    { time: '00:00', val: 40 },
+    { time: '04:00', val: 45 },
+    { time: '08:00', val: 42 },
+    { time: '12:00', val: 38 },
+    { time: '16:00', val: 50 },
+    { time: '20:00', val: 46 },
+    { time: '23:59', val: 44 },
+  ];
+
+  const filteredPlots = plots.filter(p => {
+    if (activeFilter === 'Semua') return true;
+    if (activeFilter === 'Normal') return p.status === 'optimal';
+    if (activeFilter === 'Perhatian') return p.status !== 'optimal';
+    return true;
+  });
 
   return (
-    <div className="space-y-10 pt-28 max-w-7xl mx-auto container px-6 pb-24 min-h-screen bg-light-bg">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1">
+    <div className="min-h-screen bg-[#F8FAFC] text-dark-text p-4 md:p-8 pt-28">
+      <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={onBack}
+            className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm group"
+          >
+            <ArrowRight className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
+          </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
-              <Activity className="w-6 h-6" />
+            <div className="w-12 h-12 brand-gradient rounded-xl flex items-center justify-center text-white shadow-xl shadow-brand-500/20">
+              <Activity className="w-7 h-7" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold brand-text-gradient">Dasborard Monitor</h1>
+            <div>
+              <h1 className="text-3xl font-black tracking-tight brand-text-gradient">Command Center</h1>
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none mt-1">Sorgummology Monitoring Lab</p>
+            </div>
           </div>
-          <p className="text-muted-text flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Status: Aktif & Stabil
-          </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <button onClick={handleRefresh} className="p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl border border-slate-200 transition-all group">
-            <RefreshCw className={cn("w-5 h-5 text-slate-500 group-hover:text-brand-600", isRefreshing && "animate-spin")} />
-          </button>
-          <button className="p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl border border-slate-200 transition-all text-slate-500">
-            <Bell className="w-5 h-5" />
-          </button>
-          <button className="px-6 py-3 brand-gradient rounded-2xl shadow-lg shadow-brand-500/30 text-white font-bold flex items-center gap-2 hover:opacity-90 transition-all">
-            <Settings className="w-5 h-5" />
-            <span className="hidden sm:inline">Konfigurasi</span>
-          </button>
+        
+        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black tracking-wider">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            SISTEM AKTIF
+          </div>
+          <div className="h-6 w-[1px] bg-slate-100" />
+          <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-lg">
+             <RefreshCw className="w-3 h-3 text-slate-400" />
+             <p className="text-[10px] font-mono font-bold text-slate-400">LAST SYNC: 2m AGOW</p>
+          </div>
         </div>
-      </header>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard label="Kelembaban" value={42.5} unit="%" icon={Droplets} color="bg-blue-100 text-blue-600 border border-blue-200" trend={{ value: '2.4', positive: true }} />
-        <StatCard label="Suhu" value={28} unit="°C" icon={Thermometer} color="bg-brand-100 text-brand-600 border border-brand-200" trend={{ value: '0.5', positive: false }} />
-        <StatCard label="Cahaya" value={850} unit="lx" icon={Sun} color="bg-amber-100 text-amber-600 border border-amber-200" />
-        <StatCard label="Angin" value={12.4} unit="km/h" icon={Wind} color="bg-slate-100 text-slate-600 border border-slate-200" trend={{ value: '1.2', positive: true }} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass-card p-8 min-h-[400px] bg-white border border-slate-200">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={MOCK_IOT_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorMoisture" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#16a34a" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-              <XAxis dataKey="timestamp" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontFamily: 'JetBrains Mono'}} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontFamily: 'JetBrains Mono'}} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                itemStyle={{ fontSize: '12px', fontFamily: 'JetBrains Mono' }}
-              />
-              <Legend verticalAlign="top" align="right" iconType="circle" iconSize={6} wrapperStyle={{ paddingBottom: '30px' }} />
-              <Area type="monotone" dataKey="soilMoisture" name="Kelembaban" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorMoisture)" />
-              <Area type="monotone" dataKey="temperature" name="Suhu" stroke="#16a34a" strokeWidth={3} fillOpacity={1} fill="url(#colorTemp)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="space-y-8">
-          <div className="glass-brand p-8 rounded-3xl border border-brand-500/20 bg-brand-50/50">
-            <h3 className="font-bold flex items-center gap-2 mb-6 text-brand-700">
-              <Zap className="w-5 h-5 text-brand-600" />
-              Efisiensi Energi
-            </h3>
-            <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
-              <motion.div initial={{ width: 0 }} animate={{ width: '85%' }} className="h-full brand-gradient" />
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* Left: Plot Management (Grid Lab) */}
+        <div className="lg:col-span-8 flex flex-col gap-8">
+          <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/[0.02] rounded-full translate-x-32 -translate-y-32 blur-3xl pointer-events-none" />
+            
+            <div className="flex items-center justify-between mb-8 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-brand-50 text-brand-600 rounded-xl">
+                  <Map className="w-5 h-5" />
+                </div>
+                <h2 className="font-black text-xl">Lab Unit Grid</h2>
+              </div>
+              <div className="flex gap-2">
+                {['Semua', 'Normal', 'Perhatian'].map(f => (
+                  <button 
+                    key={f}
+                    onClick={() => setActiveFilter(f)}
+                    className={cn(
+                      "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                      activeFilter === f ? "bg-dark-text text-white shadow-lg" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    )}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="text-[10px] text-brand-600 font-mono font-bold">BATERAI: 98%</p>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10">
+              {plots.map((plot) => (
+                <button
+                  key={plot.id}
+                  onClick={() => setSelectedPlotId(plot.id)}
+                  className={cn(
+                    "p-5 rounded-[2rem] border-2 transition-all relative overflow-hidden group text-left",
+                    selectedPlotId === plot.id 
+                      ? "border-brand-500 bg-brand-50/50 shadow-xl shadow-brand-500/10" 
+                      : "border-slate-50 bg-white hover:border-slate-200 shadow-sm"
+                  )}
+                >
+                  <div className="flex justify-between items-start mb-6">
+                    <span className="font-mono text-[10px] font-bold text-slate-400 group-hover:text-brand-500 transition-colors uppercase">{plot.id}</span>
+                    <div className={cn(
+                      "w-3 h-3 rounded-full shadow-sm",
+                      plot.status === 'optimal' ? "bg-emerald-500 shadow-emerald-500/20" : 
+                      plot.status === 'maintenance' ? "bg-amber-500 animate-pulse shadow-amber-500/20" : "bg-rose-500 animate-ping shadow-rose-500/20"
+                    )} />
+                  </div>
+                  <p className={cn(
+                    "font-black text-xs leading-tight mb-1 transition-colors",
+                    selectedPlotId === plot.id ? "text-brand-700" : "text-dark-text"
+                  )}>
+                    {plot.name}
+                  </p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest opacity-70">
+                    {plot.status === 'optimal' ? 'Stable' : plot.status === 'maintenance' ? 'Warning' : 'Critical'}
+                  </p>
+                  
+                  {/* Decorative progress bar at bottom of card */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-50">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ 
+                        width: plot.status === 'optimal' ? "100%" : plot.status === 'maintenance' ? "50%" : "20%" 
+                      }}
+                      className={cn(
+                        "h-full rounded-full",
+                        plot.status === 'optimal' ? "bg-emerald-500" : 
+                        plot.status === 'maintenance' ? "bg-amber-500" : "bg-rose-500"
+                      )} 
+                    />
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="glass-card p-6 bg-white border border-slate-200">
-            <h3 className="text-sm font-bold text-dark-text mb-6">Informasi Cuaca</h3>
-            <div className="flex items-center gap-4">
-              <Sun className="w-12 h-12 text-amber-500" />
-              <div>
-                <p className="text-2xl font-bold text-dark-text">32°C</p>
-                <p className="text-xs text-slate-500">Cerah Berawan</p>
+
+          {/* Sensor Nodes status */}
+          <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                <Zap className="w-5 h-5" />
+              </div>
+              <h2 className="font-black text-xl">Infrastructure Nodes</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {selectedPlot.sensors.length > 0 ? selectedPlot.sensors.map((s, idx) => (
+                <div key={idx} className="p-5 rounded-[2rem] bg-slate-50 border border-slate-100 flex items-center justify-between group hover:bg-white hover:shadow-lg transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
+                      s.status === 'active' ? "bg-emerald-100 text-emerald-600 shadow-sm" : 
+                      s.status === 'warning' ? "bg-amber-100 text-amber-600 shadow-sm" : "bg-slate-200 text-slate-500"
+                    )}>
+                      {s.type.includes('Moisture') ? <Droplets className="w-6 h-6" /> : 
+                       s.type.includes('pH') ? <Activity className="w-6 h-6" /> : <Database className="w-6 h-6" />}
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{s.type}</p>
+                      <p className="text-xl font-black text-dark-text tracking-tighter">
+                        {s.value} <span className="text-[10px] font-bold text-slate-400 uppercase tracking-normal">{s.unit}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className={cn(
+                    "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter shadow-sm",
+                    s.status === 'active' ? "bg-emerald-500 text-white" : 
+                    s.status === 'warning' ? "bg-amber-500 text-white" : "bg-slate-400 text-white"
+                  )}>
+                    {s.status}
+                  </div>
+                </div>
+              )) : (
+                <div className="col-span-3 py-16 flex flex-col items-center justify-center text-slate-300">
+                  <Database className="w-16 h-16 mb-4 opacity-10 animate-pulse" />
+                  <p className="font-black text-sm tracking-widest opacity-40 uppercase">No hardware data persisted</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Telemetry & Logs */}
+        <div className="lg:col-span-4 flex flex-col gap-8">
+          <div className="bg-dark-text text-white p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-brand-500/20 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-500/10 rounded-full blur-[60px] pointer-events-none" />
+            
+            <div className="relative z-10 mb-10">
+              <p className="text-brand-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2 drop-shadow-md">Unit Analytics</p>
+              <h3 className="text-3xl font-black tracking-tight">{selectedPlot.id} Telemetry</h3>
+              <div className="flex items-center gap-2 mt-3 text-slate-400">
+                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                 <span className="text-[10px] font-bold uppercase tracking-widest">Real-time Stream</span>
+              </div>
+            </div>
+            
+            <div className="h-56 w-full relative z-10">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="glowVal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '20px', border: 'none', backgroundColor: '#0f172a', color: '#fff', fontSize: '12px', padding: '15px', fontWeight: 'bold' }}
+                    itemStyle={{ color: '#10b981' }}
+                    cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="val" 
+                    stroke="#10b981" 
+                    strokeWidth={4}
+                    fillOpacity={1} 
+                    fill="url(#glowVal)" 
+                    animationDuration={2000}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="mt-10 grid grid-cols-2 gap-4 relative z-10">
+              <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                <span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Avg Vol</span>
+                <span className="text-lg font-black text-emerald-400">42.5</span>
+              </div>
+              <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                <span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Sync</span>
+                <span className="text-lg font-black text-blue-400">99%</span>
               </div>
             </div>
           </div>
+
+          <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm flex-grow">
+            <div className="flex items-center justify-between mb-8">
+              <h4 className="font-black text-xs uppercase tracking-widest text-slate-400">System Logs</h4>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            
+            <div className="space-y-6">
+              {[
+                { time: '10:42', msg: 'Unit A2: Sensor Moisture [OFF]', type: 'error' },
+                { time: '09:15', msg: 'Node Cluster Alpha Syncing...', type: 'info' },
+                { time: '08:00', msg: 'Batch Telemetry Upload Success', type: 'info' },
+                { time: '07:22', msg: 'Unit B2: Nitrogen [WARNING]', type: 'warning' },
+              ].map((log, i) => (
+                <div key={i} className="flex gap-4 items-start group">
+                  <span className="font-mono text-[10px] font-bold text-slate-300 mt-0.5 group-hover:text-dark-text transition-colors">{log.time}</span>
+                  <p className={cn(
+                    "text-[11px] font-black leading-tight tracking-tight uppercase",
+                    log.type === 'error' ? "text-rose-500" : 
+                    log.type === 'warning' ? "text-amber-500" : "text-slate-600"
+                  )}>{log.msg}</p>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-10 pt-6 border-t border-slate-50">
+              <button className="w-full py-4 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-dark-text rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all border border-slate-100">
+                Generate Full Tech Report
+              </button>
+            </div>
+          </div>
         </div>
+
       </div>
     </div>
   );
@@ -686,7 +886,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <DashboardView />
+              <DashboardView onBack={() => setView('landing')} />
             </motion.div>
           )}
         </AnimatePresence>

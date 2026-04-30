@@ -28,7 +28,9 @@ import {
   Quote,
   Map,
   Database,
-  Power
+  Power,
+  LayoutGrid,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -762,25 +764,6 @@ const DashboardView = ({ onBack, role }: { onBack: () => void, role: UserRole })
               </button>
             )}
           </header>
-
-          {/* AI Health Insight Banner */}
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={selectedPlotId}
-            className={cn(
-              "p-6 rounded-[2rem] border flex items-center gap-5 shadow-sm transition-all duration-500",
-              insight.color
-            )}
-          >
-            <div className="w-12 h-12 rounded-2xl bg-white/50 backdrop-blur-md flex items-center justify-center shadow-inner">
-              <Info className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60 leading-none mb-1">Status Analitik Lahan: {selectedPlot.name}</p>
-              <p className="text-sm font-black tracking-tight">{insight.msg}</p>
-            </div>
-          </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2 space-y-8">

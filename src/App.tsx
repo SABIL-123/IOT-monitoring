@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { UserRole, SensorBundleType } from './types';
 import { 
   Activity, 
   Bell, 
@@ -397,6 +398,7 @@ const Testimonials = () => {
   );
 };
 
+
 // --- Dashboard Component (Monitoring Lab with Sidebar & CRUD) ---
 
 type SensorType = 'Cahaya' | 'Angin' | 'pH' | 'Moisture';
@@ -411,39 +413,54 @@ interface PlotSensor {
   status: SensorStatus;
 }
 
+interface SensorDevice {
+  id: string; // Device ID
+  location: string; // Nama Lokasi
+  bundleType: SensorBundleType;
+  sensors: PlotSensor[];
+}
+
 interface Plot {
   id: string;
   name: string;
   status: PlotStatus;
-  sensors: PlotSensor[];
+  devices: SensorDevice[];
+}
+
+interface SensorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  device?: SensorDevice | null;
 }
 
 const SensorModal = ({ 
   isOpen, 
   onClose, 
   onSave, 
-  sensor 
-}: { 
-  isOpen: boolean, 
-  onClose: () => void, 
-  onSave: (data: Partial<PlotSensor>) => void,
-  sensor?: PlotSensor | null
-}) => {
-  const [formData, setFormData] = useState<Partial<PlotSensor>>({
-    type: 'Moisture',
-    value: 0,
-    status: 'active'
+  device 
+}: SensorModalProps) => {
+  const [formData, setFormData] = useState<Partial<SensorDevice>>({
+    id: '',
+    location: '',
+    bundleType: 'PH_MOISTURE'
   });
 
   useEffect(() => {
-    if (sensor) {
+    if (device) {
       setFormData({
-        type: sensor.type,
-        value: sensor.value,
-        status: sensor.status
+        id: device.id,
+        location: device.location,
+        bundleType: device.bundleType
+      });
+    } else {
+      setFormData({
+        id: `IOT-${Math.floor(1000 + Math.random() * 9000)}`,
+        location: '',
+        bundleType: 'PH_MOISTURE'
       });
     }
-  }, [sensor]);
+  }, [device, isOpen]);
 
   if (!isOpen) return null;
 
@@ -456,57 +473,49 @@ const SensorModal = ({
       >
         <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
           <div>
-            <h3 className="text-xl font-black">{sensor ? 'Edit Sensor Node' : 'Register New Sensor'}</h3>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Laboratory Equipment Config</p>
+            <h3 className="text-xl font-black">{device ? 'Konfigurasi Hardware' : 'Registrasi Hardware Baru'}</h3>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Sistem Manajemen Sensor IoT</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white rounded-xl transition-all">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
 
-        <div className="p-8 space-y-6">
+        <div className="p-8 space-y-5">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Jenis Sensor</label>
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Device ID (Hardware ID)</label>
+            <input 
+              type="text"
+              value={formData.id}
+              onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+              placeholder="Contoh: IOT-9982"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Nama Lokasi / Lahan</label>
+            <input 
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+              placeholder="Masukan nama area..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tipe Sensor (Bundling)</label>
             <select 
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+              value={formData.bundleType}
+              onChange={(e) => setFormData({ ...formData, bundleType: e.target.value as any })}
               className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:ring-2 focus:ring-brand-500 outline-none transition-all"
             >
-              <option value="Cahaya">Pencahayaan (Lux)</option>
-              <option value="Angin">Kecepatan Angin (km/h)</option>
-              <option value="pH">Kandungan pH (pH)</option>
-              <option value="Moisture">Kelembaban (%)</option>
+              <option value="ALL">All Sensor (pH, Moisture, Light, Wind)</option>
+              <option value="PH_MOISTURE">pH & Moisture (Dual Sensor)</option>
+              <option value="PH_ONLY">pH Only</option>
+              <option value="MOISTURE_ONLY">Moisture Only</option>
             </select>
-          </div>
-
-          <div className="p-6 bg-brand-50 border border-brand-100 rounded-3xl flex flex-col items-center text-center">
-            <Activity className="w-8 h-8 text-brand-600 mb-2" />
-            <p className="text-[10px] font-black uppercase text-brand-400 tracking-widest">Real-time Reading</p>
-            <p className="text-3xl font-black text-brand-700 tracking-tighter">
-              {sensor ? sensor.value : '--'}
-            </p>
-            <p className="text-[9px] text-brand-600/60 mt-1">*Nilai diperbarui otomatis dari perangkat keras.</p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status Hardware</label>
-            <div className="grid grid-cols-3 gap-3">
-              {(['active', 'warning', 'inactive'] as SensorStatus[]).map((st) => (
-                <button
-                  key={st}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, status: st })}
-                  className={cn(
-                    "py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                    formData.status === st 
-                      ? (st === 'active' ? "bg-emerald-500 text-white" : st === 'warning' ? "bg-amber-500 text-white" : "bg-slate-500 text-white")
-                      : "bg-slate-100 text-slate-400 hover:bg-slate-200"
-                  )}
-                >
-                  {st}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -519,9 +528,9 @@ const SensorModal = ({
           </button>
           <button 
             onClick={() => onSave(formData)}
-            className="flex-[2] py-4 brand-gradient text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+            className="flex-[2] py-4 brand-gradient text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-95 transition-all text-center"
           >
-            {sensor ? 'Simpan Perubahan' : 'Instal Sensor'}
+            {device ? 'Simpan Perubahan' : 'Daftarkan Device'}
           </button>
         </div>
       </motion.div>
@@ -529,72 +538,68 @@ const SensorModal = ({
   );
 };
 
-const DashboardView = ({ onBack }: { onBack: () => void }) => {
+const DashboardView = ({ onBack, role }: { onBack: () => void, role: UserRole }) => {
   const [activeTab, setActiveTab] = useState<'Overview' | SensorType>('Overview');
-  const [selectedPlotId, setSelectedPlotId] = useState<string>('P-01');
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSensor, setEditingSensor] = useState<PlotSensor | null>(null);
+  const [editingDevice, setEditingDevice] = useState<SensorDevice | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Weekly data simulation state
   const [weeklyData, setWeeklyData] = useState<{ day: string; value: number }[]>([]);
 
-  // Local state for CRUD simulation
-  const [plots, setPlots] = useState<Plot[]>([
+  // Initial devices state
+  const [devices, setDevices] = useState<SensorDevice[]>([
     {
-      id: 'P-01',
-      name: 'Plot Utara A1',
-      status: 'optimal',
+      id: 'IOT-2024-X1',
+      location: 'Lahan Utara - Blok A',
+      bundleType: 'ALL',
       sensors: [
-        { id: 'S1', type: 'Moisture', value: 45, unit: '%', status: 'active' },
-        { id: 'S2', type: 'pH', value: 6.5, unit: 'pH', status: 'active' },
-        { id: 'S3', type: 'Cahaya', value: 850, unit: 'lux', status: 'active' },
+        { id: 's1', type: 'Moisture', value: 45, unit: '%', status: 'active' },
+        { id: 's2', type: 'pH', value: 6.5, unit: 'pH', status: 'active' },
+        { id: 's3', type: 'Cahaya', value: 850, unit: 'lux', status: 'active' },
+        { id: 's4', type: 'Angin', value: 12, unit: 'km/h', status: 'active' },
       ]
     },
     {
-      id: 'P-02',
-      name: 'Plot Utara A2',
-      status: 'maintenance',
+      id: 'IOT-2024-X2',
+      location: 'Lahan Timur - Blok B',
+      bundleType: 'PH_MOISTURE',
       sensors: [
-        { id: 'S4', type: 'Moisture', value: 12, unit: '%', status: 'warning' },
-        { id: 'S5', type: 'pH', value: 5.2, unit: 'pH', status: 'active' },
-        { id: 'S6', type: 'Angin', value: 15, unit: 'km/h', status: 'active' },
+        { id: 's5', type: 'Moisture', value: 12, unit: '%', status: 'active' },
+        { id: 's6', type: 'pH', value: 5.2, unit: 'pH', status: 'active' },
       ]
     },
     {
-      id: 'P-03',
-      name: 'Plot Timur B1',
-      status: 'optimal',
+      id: 'IOT-2024-X3',
+      location: 'Greenhouse C1',
+      bundleType: 'PH_ONLY',
       sensors: [
-        { id: 'S7', type: 'Moisture', value: 42, unit: '%', status: 'active' },
-        { id: 'S8', type: 'pH', value: 6.8, unit: 'pH', status: 'active' },
+        { id: 's7', type: 'pH', value: 6.8, unit: 'pH', status: 'active' },
       ]
     }
   ]);
 
   const sidebarMenus = [
-    { id: 'Overview', label: 'Overview', icon: Map },
-    { id: 'Cahaya', label: 'Sensor Cahaya', icon: Sun },
-    { id: 'Angin', label: 'Sensor Angin', icon: Wind },
-    { id: 'pH', label: 'Sensor pH', icon: Activity },
-    { id: 'Moisture', label: 'Sensor Moist', icon: Droplets },
+    { id: 'Overview', label: role === 'ADMIN' ? 'Manajemen Sensor' : 'Dashboard Monitoring', icon: LayoutGrid },
+    { id: 'Cahaya', label: 'Monitor Cahaya', icon: Sun },
+    { id: 'Angin', label: 'Kecepatan Angin', icon: Wind },
+    { id: 'pH', label: 'Tingkat pH Tanah', icon: Activity },
+    { id: 'Moisture', label: 'Kelembaban Tanah', icon: Droplets },
   ];
 
-  const selectedPlot = plots.find(p => p.id === selectedPlotId) || plots[0];
+  const selectedDevice = devices.find(d => d.id === selectedDeviceId) || null;
   
-  // Generate weekly chart data when plot or tab changes
+  // Generate weekly chart data
   useEffect(() => {
     const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-    const baseVal = activeTab === 'Overview' 
-      ? (selectedPlot.sensors[0]?.value || 50) 
-      : (selectedPlot.sensors.find(s => s.type === activeTab)?.value || 50);
-
+    const baseVal = activeTab === 'Overview' ? 50 : 60;
     const data = days.map(day => ({
       day,
       value: Math.max(0, Math.floor(baseVal + (Math.random() * 20 - 10)))
     }));
     setWeeklyData(data);
-  }, [selectedPlotId, activeTab, selectedPlot.sensors]);
+  }, [selectedDeviceId, activeTab]);
 
   const avgValue = weeklyData.length > 0 
     ? Math.round(weeklyData.reduce((acc, curr) => acc + curr.value, 0) / weeklyData.length)
@@ -605,217 +610,157 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
     : 'stabil';
   
   // Filter logic
-  const filteredPlots = activeTab === 'Overview' 
-    ? plots 
-    : plots.filter(p => p.sensors.some(s => s.type === activeTab));
+  const filteredDevices = activeTab === 'Overview' 
+    ? devices 
+    : devices.filter(d => d.sensors.some(s => s.type === activeTab));
 
   // --- CRUD Actions ---
   const openAddModal = () => {
-    setEditingSensor(null);
+    setEditingDevice(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (sensor: PlotSensor) => {
-    setEditingSensor(sensor);
+  const openEditModal = (device: SensorDevice) => {
+    setEditingDevice(device);
     setIsModalOpen(true);
   };
 
-  const handleSaveSensor = (data: Partial<PlotSensor>) => {
-    // For simulation, if creating, assign a random value based on type
-    const simulatedValue = editingSensor ? editingSensor.value : (
-      data.type === 'Cahaya' ? Math.floor(Math.random() * 1000) + 200 :
-      data.type === 'pH' ? Number((Math.random() * 3 + 4.5).toFixed(1)) :
-      data.type === 'Angin' ? Math.floor(Math.random() * 30) + 5 :
-      Math.floor(Math.random() * 50) + 10
-    );
-
-    if (editingSensor) {
-      // Update
-      setPlots(prev => prev.map(p => 
-        p.id === selectedPlotId 
-          ? { 
-              ...p, 
-              sensors: p.sensors.map(s => s.id === editingSensor.id ? { 
-                ...s, 
-                ...data, 
-                unit: data.type === 'Cahaya' ? 'lux' : data.type === 'Angin' ? 'km/h' : data.type === 'pH' ? 'pH' : '%' 
-              } : s) 
-            }
-          : p
-      ));
+  const handleSaveDevice = (data: Partial<SensorDevice>) => {
+    if (editingDevice) {
+      setDevices(prev => prev.map(d => d.id === editingDevice.id ? { ...d, ...data } : d));
     } else {
-      // Create
-      const newSensor: PlotSensor = {
-        id: `S${Date.now()}`,
-        type: data.type || 'Moisture',
-        value: simulatedValue,
-        unit: data.type === 'Cahaya' ? 'lux' : data.type === 'Angin' ? 'km/h' : data.type === 'pH' ? 'pH' : '%',
-        status: data.status || 'active'
+      const newDevice: SensorDevice = {
+        id: data.id || `IOT-${Date.now()}`,
+        location: data.location || 'Lokasi Baru',
+        bundleType: data.bundleType || 'PH_MOISTURE',
+        sensors: []
       };
       
-      setPlots(prev => prev.map(p => 
-        p.id === selectedPlotId 
-          ? { ...p, sensors: [...p.sensors, newSensor] }
-          : p
-      ));
+      const defaults: Record<SensorBundleType, SensorType[]> = {
+        'ALL': ['pH', 'Moisture', 'Cahaya', 'Angin'],
+        'PH_MOISTURE': ['pH', 'Moisture'],
+        'PH_ONLY': ['pH'],
+        'MOISTURE_ONLY': ['Moisture']
+      };
+
+      newDevice.sensors = defaults[newDevice.bundleType].map(type => ({
+        id: Math.random().toString(),
+        type,
+        value: type === 'pH' ? Number((Math.random() * 2 + 5).toFixed(1)) : 
+               type === 'Moisture' ? Math.floor(Math.random() * 60) + 20 :
+               type === 'Cahaya' ? Math.floor(Math.random() * 1000) + 100 : 15,
+        unit: type === 'pH' ? 'pH' : type === 'Moisture' ? '%' : type === 'Cahaya' ? 'lux' : 'km/h',
+        status: 'active'
+      }));
+      
+      setDevices(prev => [...prev, newDevice]);
     }
     setIsModalOpen(false);
   };
 
-  const toggleSensorStatus = (sensorId: string) => {
-    setPlots(prev => prev.map(p => 
-      p.id === selectedPlotId 
-        ? { 
-            ...p, 
-            sensors: p.sensors.map(s => s.id === sensorId ? { 
-              ...s, 
-              status: s.status === 'inactive' ? 'active' : 'inactive' 
-            } : s) 
-          }
-        : p
-    ));
-  };
-
-  const getHealthInsight = () => {
-    const moisture = selectedPlot.sensors.find(s => s.type === 'Moisture')?.value;
-    const ph = selectedPlot.sensors.find(s => s.type === 'pH')?.value;
-    const warningSensors = selectedPlot.sensors.filter(s => s.status === 'warning');
-
-    if (warningSensors.length > 0) return { 
-      msg: "Terdeteksi anomali pada perangkat keras. Periksa node sensor.",
-      color: "text-amber-600 bg-amber-50"
-    };
-    if (moisture !== undefined && moisture < 20) return { 
-      msg: "Lahan sangat kering. Butuh pengairan segera (Kesehatan di bawah rata-rata).",
-      color: "text-rose-600 bg-rose-50 border-rose-100"
-    };
-    if (ph !== undefined && (ph < 5 || ph > 8)) return { 
-      msg: "Kadar pH tidak ideal. Kesehatan tanah menurun (Butuh pemupukan korektif).",
-      color: "text-rose-600 bg-rose-50 border-rose-100"
-    };
-    
-    return { 
-      msg: "Kondisi Lahan Optimal. Seluruh parameter berada pada rentang ideal.",
-      color: "text-emerald-600 bg-emerald-50 border-emerald-100"
-    };
-  };
-
-  const insight = getHealthInsight();
-
-  const handleDeleteSensor = (sensorId: string) => {
-    if (window.confirm('Hapus node sensor ini dari sistem?')) {
-      setPlots(prev => prev.map(p => 
-        p.id === selectedPlotId 
-          ? { ...p, sensors: p.sensors.filter(s => s.id !== sensorId) }
-          : p
-      ));
+  const handleDeleteDevice = (deviceId: string) => {
+    if (window.confirm('Hapus perangkat IoT ini dari sistem?')) {
+      setDevices(prev => prev.filter(d => d.id !== deviceId));
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F1F5F9] text-dark-text overflow-x-hidden">
+    <div className="flex min-h-screen bg-[#F8FAFC] text-slate-900 overflow-x-hidden">
       
       <SensorModal 
         isOpen={isModalOpen} 
-        sensor={editingSensor}
+        device={editingDevice}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveSensor}
+        onSave={handleSaveDevice}
       />
 
-      {/* Sidebar Overlay for Mobile */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setIsSidebarOpen(false)}
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar Navigation */}
       <aside className={cn(
-        "w-64 bg-white border-r border-slate-200 flex flex-col h-screen fixed left-0 top-0 z-50 transition-transform duration-300 transform lg:translate-x-0",
+        "w-72 bg-white border-r border-slate-200 flex flex-col h-screen fixed left-0 top-0 z-50 transition-transform duration-300 lg:translate-x-0",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-8 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 brand-gradient rounded-lg flex items-center justify-center text-white shadow-lg">
-              <Activity className="w-5 h-5" />
+            <div className="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center text-white shadow-lg">
+              <Activity className="w-6 h-6" />
             </div>
-            <p className="font-black tracking-tight text-lg brand-text-gradient">Sorgummology</p>
+            <p className="font-display font-black text-xl tracking-tight brand-text-gradient">Sorgum IoT</p>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-slate-400">
-            <X className="w-5 h-5" />
-          </button>
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-slate-400"><X className="w-6 h-6" /></button>
         </div>
 
-        <nav className="flex-grow p-4 space-y-2 overflow-y-auto pt-6">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mb-4">Main Menu</p>
+        <nav className="flex-grow p-6 space-y-2 overflow-y-auto pt-8">
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] px-4 mb-5">Main Dashboard</p>
           {sidebarMenus.map((menu) => (
             <button
               key={menu.id}
-              onClick={() => {
-                setActiveTab(menu.id as any);
-                setIsSidebarOpen(false);
-              }}
+              onClick={() => { setActiveTab(menu.id as any); setIsSidebarOpen(false); }}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all group",
+                "w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-sm transition-all group",
                 activeTab === menu.id 
-                  ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20" 
-                  : "text-slate-500 hover:bg-slate-50 hover:text-dark-text"
+                  ? "bg-brand-600 text-white shadow-xl shadow-brand-600/20" 
+                  : "text-slate-500 hover:bg-slate-50 hover:text-brand-600"
               )}
             >
-              <menu.icon className={cn("w-5 h-5", activeTab === menu.id ? "text-white" : "text-slate-400 group-hover:text-brand-500")} />
+              <menu.icon className={cn("w-5 h-5", activeTab === menu.id ? "text-white" : "text-slate-400 group-hover:text-brand-600")} />
               {menu.label}
             </button>
           ))}
-          <div className="pt-10">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mb-4">System</p>
-            <button onClick={onBack} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all">
+          
+          <div className="pt-12">
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] px-4 mb-5">Account Status</p>
+            <div className="px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-black">
+                {role === 'ADMIN' ? 'AD' : 'US'}
+              </div>
+              <div>
+                <p className="text-xs font-black text-slate-900">{role === 'ADMIN' ? 'Administrator' : 'User Monitor'}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{role === 'ADMIN' ? 'Full Access' : 'Read Only'}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-8">
+            <button onClick={onBack} className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-sm text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all">
               <ArrowRight className="w-5 h-5 rotate-180" />
               Keluar Panel
             </button>
           </div>
         </nav>
-
-        <div className="p-6 bg-slate-50 border-t border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
-               <img src="https://i.pravatar.cc/150?u=admin" alt="Admin" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <p className="text-xs font-black text-dark-text">Admin Tani</p>
-              <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-tighter">Verified Chief</p>
-            </div>
-          </div>
-        </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-grow lg:ml-64 p-4 sm:p-8 min-h-screen">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <main className="flex-grow lg:ml-72 p-6 sm:p-10 min-h-screen">
+        <div className="max-w-7xl mx-auto space-y-10">
           
-          <header className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-3 bg-white border border-slate-200 rounded-2xl text-slate-500 shadow-sm"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
+          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-white border border-slate-200 rounded-2xl text-slate-500 shadow-sm"><Menu className="w-6 h-6" /></button>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{activeTab === 'Overview' ? 'Pusat Kontrol Lahan' : `Monitoring ${activeTab}`}</h1>
-                <p className="text-slate-500 font-medium text-xs sm:text-sm">{filteredPlots.length} Lahan terdeteksi.</p>
+                <h1 className="text-3xl sm:text-4xl font-display font-black tracking-tight text-slate-900">
+                  {role === 'ADMIN' && activeTab === 'Overview' ? 'Manajemen Sensor Hardware' : 
+                   activeTab === 'Overview' ? 'Dashboard Monitoring' : `Data Sensor ${activeTab}`}
+                </h1>
+                <p className="text-slate-400 font-medium text-sm sm:text-base mt-2">
+                  Memantau total {filteredDevices.length} perangkat IoT aktif di lapangan.
+                </p>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
-               <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black">
-                 SERVER: STABLE
-               </div>
-            </div>
+            
+            {role === 'ADMIN' && (
+              <button onClick={openAddModal} className="px-8 py-4 brand-gradient text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-brand-600/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                <Plus className="w-5 h-5" />
+                Registrasi Alat
+              </button>
+            )}
           </header>
 
           {/* AI Health Insight Banner */}
@@ -837,173 +782,113 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* Plot Grid Section */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden relative">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="font-black text-xl flex items-center gap-2">
-                    <Map className="w-5 h-5 text-brand-500" />
-                    Grid Peta Lahan
-                  </h2>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">Live Indicators</span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {filteredPlots.map((plot) => (
-                    <button
-                      key={plot.id}
-                      onClick={() => setSelectedPlotId(plot.id)}
-                      className={cn(
-                        "p-6 rounded-[2rem] border-2 transition-all relative overflow-hidden text-left group",
-                        selectedPlotId === plot.id 
-                          ? "border-brand-500 bg-brand-50 shadow-xl shadow-brand-500/10" 
-                          : "border-slate-50 bg-white hover:border-slate-200 shadow-sm"
-                      )}
-                    >
-                      <div className="flex justify-between items-start mb-6">
-                        <span className="font-mono text-[10px] font-bold text-slate-400">{plot.id}</span>
-                        <div className="flex gap-1">
-                          {/* Show icons of sensors present in this plot */}
-                          {['Cahaya', 'Angin', 'pH', 'Moisture'].map(type => {
-                            const hasSensor = plot.sensors.some(s => s.type === type);
-                            if (!hasSensor) return null;
-                            return (
-                              <div key={type} className="w-1.5 h-1.5 rounded-full bg-brand-500" title={type} />
-                            )
-                          })}
-                        </div>
-                      </div>
-                      <p className={cn(
-                        "font-black text-sm mb-1 transition-colors",
-                        selectedPlotId === plot.id ? "text-brand-700" : "text-dark-text"
-                      )}>
-                        {plot.name}
-                      </p>
-                      <div className="text-[10px] font-bold text-slate-400 capitalize flex items-center gap-2">
-                        <span className={cn("inline-block w-2 h-2 rounded-full", 
-                          plot.status === 'optimal' ? 'bg-emerald-500' : 'bg-amber-500'
-                        )} />
-                        {plot.status}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Sensor Management Area (CRUD) */}
-              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
-                  <div>
-                    <h2 className="font-black text-xl flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-slate-400" />
-                      Manajemen Sensor: {selectedPlot.name}
-                    </h2>
-                    <p className="text-xs text-slate-400 font-medium mt-1">Kelola perangkat keras pada lahan ini.</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-8">
+              
+              {role === 'ADMIN' && activeTab === 'Overview' ? (
+                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                    <h3 className="font-black flex items-center gap-2">
+                      <Settings className="w-5 h-5 text-brand-600" />
+                      Pusat Manajemen Sensor IoT
+                    </h3>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={openAddModal}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 brand-gradient text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-500/20 hover:scale-105 active:scale-95 transition-all"
-                    >
-                      <Zap className="w-4 h-4" />
-                      Instal Perangkat
-                    </button>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-white">
+                          <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Device ID</th>
+                          <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Lokasi Lahan</th>
+                          <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Bundle Type</th>
+                          <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {devices.map((device) => (
+                          <tr key={device.id} className="hover:bg-slate-50 transition-colors group">
+                            <td className="p-6">
+                              <p className="font-mono font-black text-brand-600">{device.id}</p>
+                            </td>
+                            <td className="p-6">
+                              <p className="font-bold text-slate-900">{device.location}</p>
+                            </td>
+                            <td className="p-6">
+                              <span className="px-4 py-1.5 bg-slate-100 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                                {device.bundleType.replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="p-6 text-right space-x-2">
+                              <button onClick={() => { setEditingDevice(device); setIsModalOpen(true); }} className="p-3 text-brand-600 hover:bg-brand-50 rounded-xl transition-all"><Settings className="w-5 h-5" /></button>
+                              <button onClick={() => handleDeleteDevice(device.id)} className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><X className="w-5 h-5" /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-
-                <div className="space-y-4">
-                  {selectedPlot.sensors.length > 0 ? (
-                    selectedPlot.sensors.map((sensor) => (
-                      <div key={sensor.id} className="group p-5 rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:bg-white hover:shadow-xl hover:border-brand-100 transition-all">
-                        <div className="flex items-center gap-5">
-                          <div className={cn(
-                            "w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm relative overflow-hidden transition-all",
-                            sensor.status === 'active' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
-                            sensor.status === 'warning' ? "bg-amber-50 text-amber-600 border border-amber-100" :
-                            "bg-slate-100 text-slate-400 border border-slate-200"
-                          )}>
-                             {sensor.type === 'Cahaya' ? <Sun className="w-6 h-6" /> : 
-                              sensor.type === 'Angin' ? <Wind className="w-6 h-6" /> :
-                              sensor.type === 'pH' ? <Activity className="w-6 h-6" /> : <Droplets className="w-6 h-6" />}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {filteredDevices.map((device) => (
+                    <motion.div 
+                      key={device.id} layout
+                      className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm relative group overflow-hidden"
+                    >
+                      <div className="flex justify-between items-start mb-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-black shadow-sm">
+                            <Zap className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{sensor.type} Node</p>
-                            <div className="flex items-center gap-2">
-                              <p className="text-xl font-black text-dark-text tracking-tighter">{sensor.value}</p>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase">{sensor.unit}</span>
-                              <span className={cn(
-                                "ml-2 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
-                                sensor.status === 'active' ? "bg-emerald-100 text-emerald-600" :
-                                sensor.status === 'warning' ? "bg-amber-100 text-amber-600" :
-                                "bg-slate-200 text-slate-500"
-                              )}>
-                                {sensor.status}
-                              </span>
-                            </div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{device.id}</p>
+                            <h4 className="font-black text-slate-900">{device.location}</h4>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => toggleSensorStatus(sensor.id)}
-                            className={cn(
-                              "p-3 border rounded-xl transition-all shadow-sm",
-                              sensor.status === 'inactive' 
-                                ? "bg-rose-50 border-rose-100 text-rose-500 hover:bg-emerald-50 hover:text-emerald-500 hover:border-emerald-100" 
-                                : "bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100"
-                            )}
-                            title={sensor.status === 'inactive' ? 'Aktifkan Sensor' : 'Matikan Sensor'}
-                          >
-                            <Power className="w-5 h-5" />
-                          </button>
-                          <button 
-                            onClick={() => openEditModal(sensor)}
-                            className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-brand-500 hover:border-brand-200 rounded-xl transition-all shadow-sm"
-                            title="Konfigurasi Sensor"
-                          >
-                            <Settings className="w-5 h-5" />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteSensor(sensor.id)}
-                            className="p-3 bg-white border border-slate-200 text-slate-300 hover:text-rose-500 hover:border-rose-200 rounded-xl transition-all shadow-sm"
-                            title="Hapus Sensor"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="py-16 text-center border-2 border-dashed border-slate-100 rounded-[2.5rem]">
-                      <Database className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                      <p className="text-slate-400 font-bold text-sm">Belum ada sensor yang terdaftar pada lahan ini.</p>
-                      <button onClick={openAddModal} className="mt-4 text-brand-500 font-black text-xs uppercase tracking-widest hover:underline">Tambah Sekarang</button>
-                    </div>
-                  )}
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        {device.sensors.filter(s => activeTab === 'Overview' || s.type === activeTab).map((sensor) => (
+                          <div key={sensor.id} className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 group-hover:bg-white group-hover:border-brand-100 transition-all duration-500">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">{sensor.type}</p>
+                            <div className="flex items-end gap-1">
+                              <span className="text-2xl font-black text-slate-900 leading-none">{sensor.value}</span>
+                              <span className="text-[10px] font-bold text-slate-400 mb-1">{sensor.unit}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-8 pt-8 border-t border-dashed border-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                           <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Live Sync</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400">{device.bundleType}</span>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Right Panel: Active Monitoring Summary */}
             <div className="space-y-8">
-              <div className="bg-dark-text text-white p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/20 rounded-full blur-3xl" />
-                <h3 className="text-2xl font-black mb-6">Unit Stats (7 Hari)</h3>
+              <div className="bg-slate-900 text-white p-10 rounded-[4rem] shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-brand-500/20 rounded-full blur-[80px]" />
+                <h3 className="text-2xl font-black mb-8 flex items-center gap-3">
+                  <TrendingUp className="w-6 h-6 text-brand-500" />
+                  Statistik Aktif
+                </h3>
                 
-                {/* Weekly Weekly Chart */}
-                <div className="h-40 w-full mb-8">
+                <div className="h-48 w-full mb-10">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={weeklyData}>
                       <Tooltip 
-                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}
-                        itemStyle={{ color: '#10b981' }}
-                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '15px', fontSize: '10px' }}
+                        cursor={{ fill: 'rgba(255,255,255,0.05)' }} 
                       />
-                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                        {weeklyData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={index === weeklyData.length - 1 ? '#10b981' : '#10b98144'} />
+                      <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                        {weeklyData.map((_, i) => (
+                          <Cell key={i} fill={i === weeklyData.length - 1 ? '#0ea5e9' : '#ffffff20'} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -1011,77 +896,69 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="p-5 bg-white/5 border border-white/10 rounded-[2rem]">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Analisis Status Lahan</p>
+                  <div className="p-6 bg-white/5 border border-white/10 rounded-[2.5rem]">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Analisis Status Lahan</p>
                     <div className={cn(
                       "p-4 rounded-2xl flex items-center gap-4 border transition-all duration-500",
-                      insight.msg.includes("Optimal") 
-                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
-                        : "bg-rose-500/10 border-rose-500/20 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.1)]"
+                      avgValue > 40 
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                        : "bg-rose-500/10 border-rose-500/20 text-rose-400"
                     )}>
-                      {insight.msg.includes("Optimal") ? (
+                      {avgValue > 40 ? (
                         <>
                           <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
                             <ShieldCheck className="w-6 h-6" />
                           </div>
                           <div>
                             <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Status: NORMAL</p>
-                            <p className="text-[10px] font-bold opacity-70">Lahan siap panen & sehat.</p>
+                            <p className="text-[10px] font-bold opacity-70">Lahan dalam kondisi sehat.</p>
                           </div>
                         </>
                       ) : (
                         <>
                           <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
-                            <Info className="w-6 h-6 rotate-180" />
+                            <X className="w-6 h-6" />
                           </div>
                           <div>
                             <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Status: TIDAK AMAN</p>
-                            <p className="text-[10px] font-bold opacity-70 text-rose-400/80">Butuh penanganan segera!</p>
+                            <p className="text-[10px] font-bold opacity-70">Butuh penanganan segera!</p>
                           </div>
                         </>
                       )}
                     </div>
                   </div>
-
-                  <div className="p-5 bg-white/5 border border-white/10 rounded-[2rem] flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rata-rata Mingguan</p>
-                      <p className="text-3xl font-black text-emerald-400">{avgValue}</p>
-                    </div>
-                    <div className={cn(
-                      "px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1",
-                      trend === 'naik' ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
-                    )}>
-                      {trend === 'naik' ? <ArrowRight className="w-3 h-3 -rotate-45" /> : <ArrowRight className="w-3 h-3 rotate-45" />}
-                      Trend {trend}
-                    </div>
-                  </div>
                   
-                  <div className="p-5 bg-white/5 border border-white/10 rounded-[2rem]">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status Lahan</p>
-                    <div className="flex items-center gap-3 mt-2">
-                       <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
-                       <span className="font-black text-sm uppercase tracking-wide">Sync: Terhubung</span>
+                  <div className="p-6 bg-white/5 border border-white/10 rounded-[2.5rem] flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Rata-rata Mingguan</p>
+                      <p className="text-3xl font-black text-brand-400">{avgValue}</p>
+                    </div>
+                    <div className={cn("px-4 py-1.5 rounded-full text-[10px] font-black uppercase", trend === 'naik' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400')}>
+                      {trend}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
-                <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 mb-6">Admin Logs</h4>
-                <div className="space-y-4">
-                  {[
-                    { time: '10:42', msg: 'Update Parameter P-01', type: 'info' },
-                    { time: '09:15', msg: 'Sistem Sinkronisasi Berhasil', type: 'system' },
-                    { time: '07:30', msg: 'Log Masuk: Admin Tani', type: 'system' },
-                  ].map((log, i) => (
-                    <div key={i} className="flex gap-3 text-[11px] font-bold">
-                       <span className="font-mono text-slate-300">{log.time}</span>
-                       <span className="text-slate-600">{log.msg}</span>
-                    </div>
-                  ))}
+              {role === 'ADMIN' && (
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
+                  <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 mb-8 border-b border-slate-50 pb-4">Aktivitas Terbaru</h4>
+                  <div className="space-y-6">
+                    {[
+                      { t: '11:20', a: 'Update Hardware', d: 'IOT-2024-X1' },
+                      { t: '10:45', a: 'Sync Berhasil', d: 'Global Cloud' },
+                    ].map((log, i) => (
+                      <div key={i} className="flex gap-4 items-start">
+                        <span className="text-[10px] font-mono font-black text-slate-300">{log.t}</span>
+                        <div>
+                          <p className="text-xs font-black text-slate-700">{log.a}</p>
+                          <p className="text-[10px] font-bold text-slate-400 mt-0.5">{log.d}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -1094,6 +971,7 @@ const DashboardView = ({ onBack }: { onBack: () => void }) => {
 
 export default function App() {
   const [view, setView] = useState<ViewMode>('landing');
+  const [userRole, setUserRole] = useState<UserRole>('USER');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -1244,7 +1122,28 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <DashboardView onBack={() => setView('landing')} />
+              <DashboardView onBack={() => setView('landing')} role={userRole} />
+              
+              {/* Role Switcher - Floating for Demo */}
+              <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3">
+                <p className="text-[9px] font-black uppercase text-slate-400 bg-white/80 backdrop-blur px-3 py-1 rounded-full border border-slate-100 shadow-sm text-center">Switch Role (Dev)</p>
+                <div className="flex gap-2 p-2 bg-white rounded-2xl shadow-2xl border border-slate-100">
+                  {(['ADMIN', 'USER'] as UserRole[]).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setUserRole(r)}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                        userRole === r 
+                          ? "brand-gradient text-white shadow-lg shadow-brand-500/20" 
+                          : "text-slate-400 hover:bg-slate-50"
+                      )}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

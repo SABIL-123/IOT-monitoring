@@ -1,3 +1,7 @@
+export type UserRole = 'ADMIN' | 'USER';
+
+export type SensorBundleType = 'ALL' | 'PH_MOISTURE' | 'PH_ONLY' | 'MOISTURE_ONLY';
+
 export interface IoTData {
   timestamp: string;
   soilMoisture: number;

@@ -549,8 +549,10 @@ interface SensorDevice {
 interface Plot {
   id: string;
   name: string;
-  status: PlotStatus;
-  devices: SensorDevice[];
+  status: 'OPTIMAL' | 'WARNING' | 'CRITICAL';
+  area?: number;
+  location?: string;
+  devices?: SensorDevice[];
 }
 
 interface SensorModalProps {
@@ -667,18 +669,27 @@ const SensorModal = ({
 const DashboardView = ({ onBack, role }: { onBack: () => void, role: UserRole }) => {
   const [activeTab, setActiveTab] = useState<'Overview' | SensorType>('Overview');
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [selectedPlotId, setSelectedPlotId] = useState<string | 'ALL'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPlotModalOpen, setIsPlotModalOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<SensorDevice | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Weekly data simulation state
   const [weeklyData, setWeeklyData] = useState<{ day: string; value: number }[]>([]);
 
+  // Plots state
+  const [plots, setPlots] = useState<Plot[]>([
+    { id: 'PLOT-01', name: 'Lahan Sorgum Utama', area: 12, location: 'Jawa Timur, Malang', status: 'OPTIMAL' },
+    { id: 'PLOT-02', name: 'Lahan Percobaan B', area: 5, location: 'Jawa Timur, Kediri', status: 'WARNING' },
+  ]);
+
   // Initial devices state
-  const [devices, setDevices] = useState<SensorDevice[]>([
+  const [devices, setDevices] = useState<(SensorDevice & { plotId: string })[]>([
     {
       id: 'IOT-2024-X1',
-      location: 'Lahan Utara - Blok A',
+      plotId: 'PLOT-01',
+      location: 'Blok A - Utara',
       bundleType: 'ALL',
       sensors: [
         { id: 's1', type: 'Moisture', value: 45, unit: '%', status: 'active' },
@@ -689,7 +700,8 @@ const DashboardView = ({ onBack, role }: { onBack: () => void, role: UserRole })
     },
     {
       id: 'IOT-2024-X2',
-      location: 'Lahan Timur - Blok B',
+      plotId: 'PLOT-01',
+      location: 'Blok B - Selatan',
       bundleType: 'PH_MOISTURE',
       sensors: [
         { id: 's5', type: 'Moisture', value: 12, unit: '%', status: 'active' },
@@ -698,6 +710,7 @@ const DashboardView = ({ onBack, role }: { onBack: () => void, role: UserRole })
     },
     {
       id: 'IOT-2024-X3',
+      plotId: 'PLOT-02',
       location: 'Greenhouse C1',
       bundleType: 'PH_ONLY',
       sensors: [
@@ -736,11 +749,25 @@ const DashboardView = ({ onBack, role }: { onBack: () => void, role: UserRole })
     : 'stabil';
   
   // Filter logic
-  const filteredDevices = activeTab === 'Overview' 
-    ? devices 
-    : devices.filter(d => d.sensors.some(s => s.type === activeTab));
+  const filteredDevices = devices.filter(d => {
+    const plotMatch = selectedPlotId === 'ALL' || d.plotId === selectedPlotId;
+    const typeMatch = activeTab === 'Overview' || d.sensors.some(s => s.type === activeTab);
+    return plotMatch && typeMatch;
+  });
+
+  const activePlot = plots.find(p => p.id === selectedPlotId);
 
   // --- CRUD Actions ---
+  const handleAddPlot = () => {
+    const newPlot: Plot = {
+      id: `PLOT-0${plots.length + 1}`,
+      name: `Lahan Baru ${plots.length + 1}`,
+      area: 0,
+      location: 'Lokasi Belum Diatur',
+      status: 'OPTIMAL'
+    };
+    setPlots([...plots, newPlot]);
+  };
   const openAddModal = () => {
     setEditingDevice(null);
     setIsModalOpen(true);
@@ -867,27 +894,95 @@ const DashboardView = ({ onBack, role }: { onBack: () => void, role: UserRole })
       <main className="flex-grow lg:ml-72 p-6 sm:p-10 min-h-screen">
         <div className="max-w-7xl mx-auto space-y-10">
           
-          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            <div className="flex items-center gap-5">
-              <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-white border border-slate-200 rounded-2xl text-slate-500 shadow-sm"><Menu className="w-6 h-6" /></button>
-              <div>
-                <h1 className="text-3xl sm:text-4xl font-display font-black tracking-tight text-slate-900">
-                  {role === 'ADMIN' && activeTab === 'Overview' ? 'Manajemen Sensor Hardware' : 
-                   activeTab === 'Overview' ? 'Dashboard Monitoring' : `Data Sensor ${activeTab}`}
-                </h1>
-                <p className="text-slate-400 font-medium text-sm sm:text-base mt-2">
-                  Memantau total {filteredDevices.length} perangkat IoT aktif di lapangan.
-                </p>
+          <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-8">
+            <div className="space-y-6">
+              <div className="flex items-center gap-5">
+                <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-white border border-slate-200 rounded-2xl text-slate-500 shadow-sm"><Menu className="w-6 h-6" /></button>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-display font-black tracking-tight text-slate-900">
+                    Sorgum Control Center
+                  </h1>
+                  <p className="text-slate-400 font-bold text-xs sm:text-sm uppercase tracking-[0.2em] mt-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Monitoring Real-time Lapangan
+                  </p>
+                </div>
+              </div>
+
+              {/* Lahan/Plot Filter Tabs */}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => setSelectedPlotId('ALL')}
+                  className={cn(
+                    "px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all",
+                    selectedPlotId === 'ALL' ? "brand-gradient text-white shadow-xl shadow-brand-500/20" : "bg-white text-slate-400 border border-slate-200 hover:border-slate-300"
+                  )}
+                >
+                  Semua Lahan
+                </button>
+                {plots.map(plot => (
+                  <button
+                    key={plot.id}
+                    onClick={() => setSelectedPlotId(plot.id)}
+                    className={cn(
+                      "px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-3",
+                      selectedPlotId === plot.id ? "brand-gradient text-white shadow-xl shadow-brand-500/20" : "bg-white text-slate-400 border border-slate-200 hover:border-slate-300"
+                    )}
+                  >
+                    <Map className="w-4 h-4 opacity-50" />
+                    {plot.name}
+                  </button>
+                ))}
+                {role === 'ADMIN' && (
+                  <button 
+                    onClick={handleAddPlot}
+                    className="w-12 h-12 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 flex items-center justify-center hover:border-brand-500 hover:text-brand-500 transition-all active:scale-95"
+                    title="Tambah Lahan Baru"
+                  >
+                    <Plus className="w-6 h-6" />
+                  </button>
+                )}
               </div>
             </div>
             
-            {role === 'ADMIN' && (
-              <button onClick={openAddModal} className="px-8 py-4 brand-gradient text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-brand-600/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
-                <Plus className="w-5 h-5" />
-                Registrasi Alat
-              </button>
-            )}
+            <div className="flex items-center gap-4">
+              {role === 'ADMIN' && (
+                <button onClick={openAddModal} className="px-8 py-5 brand-gradient text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-brand-600/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                  <Plus className="w-5 h-5" />
+                  Daftarkan Sensor Baru
+                </button>
+              )}
+            </div>
           </header>
+
+          {/* Quick Sensor Filter (Inside Plot) */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {sidebarMenus.map(menu => (
+              <button
+                key={menu.id}
+                onClick={() => setActiveTab(menu.id as any)}
+                className={cn(
+                  "p-4 rounded-[2rem] border transition-all flex flex-col items-center gap-3 text-center group",
+                  activeTab === menu.id 
+                    ? "bg-white border-brand-500 shadow-xl shadow-brand-500/5" 
+                    : "bg-white/50 border-slate-100 hover:border-slate-200"
+                )}
+              >
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+                  activeTab === menu.id ? "brand-gradient text-white scale-110 shadow-lg shadow-brand-500/30" : "bg-slate-100 text-slate-400 group-hover:scale-105"
+                )}>
+                  <menu.icon className="w-6 h-6" />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-black uppercase tracking-widest",
+                  activeTab === menu.id ? "text-brand-600" : "text-slate-400 group-hover:text-slate-600"
+                )}>
+                  {menu.id === 'Overview' ? 'Tampilkan Semua' : menu.id}
+                </span>
+              </button>
+            ))}
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2 space-y-8">
@@ -917,7 +1012,10 @@ const DashboardView = ({ onBack, role }: { onBack: () => void, role: UserRole })
                               <p className="font-mono font-black text-brand-600">{device.id}</p>
                             </td>
                             <td className="p-6">
-                              <p className="font-bold text-slate-900">{device.location}</p>
+                              <p className="font-bold text-slate-900">
+                                {plots.find(p => p.id === device.plotId)?.name || 'N/A'}
+                                <span className="block text-[10px] text-slate-400">{device.location}</span>
+                              </p>
                             </td>
                             <td className="p-6">
                               <span className="px-4 py-1.5 bg-slate-100 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-wider">
@@ -1125,20 +1223,9 @@ export default function App() {
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setView('login')}
-                className="hidden sm:block text-xs font-black uppercase tracking-widest text-slate-500 hover:text-brand-600 transition-all mr-2"
+                className="hidden sm:flex px-8 py-3 rounded-xl brand-gradient text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-brand-500/20 hover:scale-105 active:scale-95 transition-all"
               >
                 Masuk
-              </button>
-              <button 
-                onClick={() => setView(view === 'landing' ? 'dashboard' : 'landing')}
-                className={cn(
-                  "hidden sm:flex px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-brand-500/10 active:scale-95",
-                  view === 'landing' 
-                    ? "brand-gradient text-white hover:scale-105" 
-                    : "bg-slate-100 text-dark-text border border-slate-200 hover:bg-slate-200"
-                )}
-              >
-                {view === 'landing' ? 'Buka Dasboard' : 'Beranda'}
               </button>
               <button 
                 onClick={() => setMobileMenuOpen(true)}
@@ -1187,10 +1274,10 @@ export default function App() {
               ))}
               <hr className="border-slate-100 my-4" />
               <button 
-                onClick={() => { setView('dashboard'); setMobileMenuOpen(false); }}
-                className="w-full py-4 brand-gradient text-white rounded-2xl font-bold"
+                onClick={() => { setView('login'); setMobileMenuOpen(false); }}
+                className="w-full py-5 brand-gradient text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-500/20"
               >
-                Buka Dasboard
+                Masuk Untuk Memulai
               </button>
             </nav>
           </motion.div>

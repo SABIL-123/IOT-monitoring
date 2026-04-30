@@ -47,7 +47,7 @@ import {
 import { cn } from './lib/utils';
 import { MOCK_IOT_DATA } from './constants';
 
-type ViewMode = 'landing' | 'dashboard';
+type ViewMode = 'landing' | 'dashboard' | 'login';
 
 // --- Shared Internal Components ---
 
@@ -400,6 +400,130 @@ const Testimonials = () => {
   );
 };
 
+
+// --- Auth View (Login) ---
+
+const AuthView = ({ onLogin, onBack }: { onLogin: (role: UserRole) => void, onBack: () => void }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    // Simulate API delay
+    setTimeout(() => {
+      if (email === 'admin@gmail.com' && password === '123') {
+        onLogin('ADMIN');
+      } else if (email === 'user@gmail.com' && password === '123') {
+        onLogin('USER');
+      } else {
+        setError('Email atau password salah. Silakan coba lagi.');
+        setIsLoading(false);
+      }
+    }, 1000);
+  };
+
+  return (
+    <section className="min-h-screen flex items-center justify-center p-6 bg-slate-50 relative overflow-hidden">
+      {/* Decorative Elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/5 rounded-full blur-[100px] translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent-blue/5 rounded-full blur-[100px] -translate-x-1/2 translate-y-1/2" />
+
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-sm"
+      >
+        <div className="text-center mb-10">
+          <div 
+            onClick={onBack}
+            className="inline-flex w-16 h-16 brand-gradient rounded-2xl items-center justify-center text-white shadow-2xl mb-6 cursor-pointer hover:scale-110 transition-transform"
+          >
+            <Sun className="w-10 h-10" />
+          </div>
+          <h2 className="text-3xl font-black brand-text-gradient">Selamat Datang</h2>
+          <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-2">Masuk ke Panel Monitoring Sorgummology</p>
+        </div>
+
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-2xl space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Email Pertanian</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:ring-2 focus:ring-brand-500 outline-none transition-all placeholder:text-slate-300"
+                  placeholder="admin@gmail.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Kata Sandi</label>
+              <div className="relative">
+                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:ring-2 focus:ring-brand-500 outline-none transition-all placeholder:text-slate-300"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            {error && (
+              <motion.p 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-[10px] font-bold text-rose-500 text-center bg-rose-50 p-3 rounded-xl border border-rose-100"
+              >
+                {error}
+              </motion.p>
+            )}
+
+            <button 
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-5 brand-gradient text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-brand-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+            >
+              {isLoading ? (
+                <RefreshCw className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Verifikasi & Masuk
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="pt-4 text-center">
+            <button 
+              onClick={onBack}
+              className="text-[10px] font-black uppercase text-slate-400 hover:text-brand-600 transition-colors tracking-widest"
+            >
+              Kembali Ke Beranda
+            </button>
+          </div>
+        </div>
+
+        <p className="mt-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Butuh akses? <span className="text-brand-600 cursor-pointer">Hubungi IT Support</span>
+        </p>
+      </motion.div>
+    </section>
+  );
+};
 
 // --- Dashboard Component (Monitoring Lab with Sidebar & CRUD) ---
 
@@ -1000,6 +1124,12 @@ export default function App() {
 
             <div className="flex items-center gap-4">
               <button 
+                onClick={() => setView('login')}
+                className="hidden sm:block text-xs font-black uppercase tracking-widest text-slate-500 hover:text-brand-600 transition-all mr-2"
+              >
+                Masuk
+              </button>
+              <button 
                 onClick={() => setView(view === 'landing' ? 'dashboard' : 'landing')}
                 className={cn(
                   "hidden sm:flex px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-brand-500/10 active:scale-95",
@@ -1076,7 +1206,7 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <Hero onGetStarted={() => setView('dashboard')} />
+              <Hero onGetStarted={() => setView('login')} />
               <FeatureSection />
               <Testimonials />
               
@@ -1087,7 +1217,7 @@ export default function App() {
                       <h2 className="text-4xl md:text-6xl font-display font-bold">Siap Mengubah Hasil Tani Anda?</h2>
                       <p className="text-lg text-muted-text leading-relaxed">Gabung dengan komunitas petani cerdas sekarang dan rasakan perbedaannya dengan teknologi IoT kami.</p>
                       <button 
-                        onClick={() => setView('dashboard')}
+                        onClick={() => setView('login')}
                         className="px-10 py-5 brand-gradient text-white rounded-2xl font-bold text-lg hover:shadow-2xl transition-all"
                       >
                         Mulai Gratis Sekarang
@@ -1098,6 +1228,21 @@ export default function App() {
                 </div>
               </section>
             </motion.div>
+          ) : view === 'login' ? (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <AuthView 
+                onLogin={(role) => {
+                  setUserRole(role);
+                  setView('dashboard');
+                }} 
+                onBack={() => setView('landing')} 
+              />
+            </motion.div>
           ) : (
             <motion.div
               key="dashboard"
@@ -1105,28 +1250,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <DashboardView onBack={() => setView('landing')} role={userRole} />
-              
-              {/* Role Switcher - Floating for Demo */}
-              <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3">
-                <p className="text-[9px] font-black uppercase text-slate-400 bg-white/80 backdrop-blur px-3 py-1 rounded-full border border-slate-100 shadow-sm text-center">Switch Role (Dev)</p>
-                <div className="flex gap-2 p-2 bg-white rounded-2xl shadow-2xl border border-slate-100">
-                  {(['ADMIN', 'USER'] as UserRole[]).map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => setUserRole(r)}
-                      className={cn(
-                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                        userRole === r 
-                          ? "brand-gradient text-white shadow-lg shadow-brand-500/20" 
-                          : "text-slate-400 hover:bg-slate-50"
-                      )}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <DashboardView onBack={() => { setView('landing'); setUserRole('USER'); }} role={userRole} />
             </motion.div>
           )}
         </AnimatePresence>
